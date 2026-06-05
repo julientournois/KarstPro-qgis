@@ -32,6 +32,11 @@ du script :
 set PYTHON_EXE=C:\chemin\vers\QGIS\apps\Python312\python.exe
 ```
 
+> **Méthode universelle (si le script échoue, toutes plateformes)** — depuis
+> QGIS : **Extensions → Console Python**, puis taper
+> `import karstpro.install_dependencies`. Cette méthode vise toujours le bon
+> Python (celui de QGIS), sans aucune détection de chemin.
+
 ### Déploiement du plugin (après chaque modification des sources)
 
 **QGIS 4.0.2 :**
@@ -95,6 +100,10 @@ Cas particuliers gérés automatiquement :
 - **conda/mamba** (env actif) → `pip install` sans `--user`
 - **root** → installation système
 - **Flatpak** → instructions spécifiques affichées, pas d'installation automatique
+
+> **Méthode universelle (repli, notamment Flatpak/Snap)** — depuis QGIS :
+> **Extensions → Console Python**, puis `import karstpro.install_dependencies`.
+> Vise toujours le bon Python (celui de QGIS).
 
 ### 3. Déploiement du plugin
 

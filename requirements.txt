@@ -1,0 +1,16 @@
+# Dépendances Python de KarstPro (à installer dans le Python de QGIS).
+#
+# numpy, requests et les bindings GDAL/OGR sont déjà fournis par QGIS.
+# Les paquets ci-dessous ne le sont pas et doivent être installés une fois.
+# geopandas tire automatiquement : pandas, shapely, pyproj, pyogrio.
+#
+# Méthode recommandée (toutes plateformes) :
+#   QGIS > Extensions > Console Python, puis exécuter install_dependencies.py
+#
+# Non épinglé volontairement : on laisse pip choisir des versions compatibles
+# avec le numpy/GDAL déjà présents dans QGIS pour éviter de casser l'install.
+geopandas
+rasterio
+reportlab
+whitebox
+pyproj
