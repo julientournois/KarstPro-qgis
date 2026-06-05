@@ -1,0 +1,18 @@
+[general]
+name=KarstPro
+qgisMinimumVersion=3.34
+qgisMaximumVersion=4.99
+description=Prospection karstique : analyse LIDAR HD IGN, scoring, QField
+version=1.0.0
+author=Julien Tournois
+email=julien.tournois@gmail.com
+license=PolyForm-Noncommercial-1.0.0
+about=Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.
+tracker=https://github.com/julientournois/karstpro-qgis/issues
+repository=https://github.com/julientournois/karstpro-qgis
+tags=spéléologie,karstologie,LIDAR,QField,prospection
+homepage=https://karstpro.fr
+category=Analysis
+icon=icon.png
+experimental=False
+deprecated=False

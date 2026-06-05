@@ -1,0 +1,108 @@
+{
+  "_version": "2.0",
+  "_note": "Refonte scoring v2 (2026) suite ScoringReview — suppression cold_air/circularite/densite du score, profondeur continue, lisere en score, TPI. Voir install.md section 'Validation et évolution du scoring'.",
+  "seuils_priorite": {
+    "_note": "Seuils recalibres v2 apres validation IKarre 130 cavites (Trois-Fontaines/Sommelonne/Ancerville 2026). Abaissés ~10 pts vs v1 pour compenser la suppression de cold_air+circularite+densite (20-33 pts retires). Rappel P1+P2 recalibre : 84%/56%/49% par commune ; couverture totale (>=25) : 96%/72%/60%.",
+    "rouge": 55,
+    "orange": 35,
+    "jaune": 25
+  },
+  "poids_bloc_a": 1.0,
+  "poids_bloc_b": 0.5,
+  "bloc_a": {
+    "surface": {
+      "poids": 10,
+      "seuils": [50, 300, 1500],
+      "points": [2, 5, 8, 10]
+    },
+    "profondeur": {
+      "poids": 30,
+      "seuils": [0.3, 1.0, 3.0, 8.0],
+      "points": [1, 6, 13, 22],
+      "_continu": "Au-dela de 8 m : +0.4 pt/m supplementaire, plafond 30 pts",
+      "continu_pente": 0.4,
+      "continu_max": 30
+    },
+    "ratio_ps": {
+      "poids": 8,
+      "seuils": [0.1, 0.2, 0.4],
+      "points": [0, 3, 6, 8]
+    },
+    "cold_air_index": {
+      "_note": "INFORMATIF UNIQUEMENT — redondant avec profondeur et P/sqrtS (ScoringReview 2026). Colonne calculee et exposee dans GPKG/MLL mais non comptee dans le score.",
+      "poids": 0,
+      "seuils": [0.3, 0.5, 0.7],
+      "points": [0, 3, 6, 10]
+    },
+    "circularite": {
+      "_note": "INFORMATIF UNIQUEMENT — penalise les dolines structurales allongees du Barrois (ScoringReview 2026). Colonne calculee et exposee mais non comptee dans le score.",
+      "poids": 0,
+      "seuils": [0.4, 0.6, 0.8],
+      "points": [0, 3, 6, 8]
+    },
+    "pente_bord": {
+      "poids": 20,
+      "seuils": [20.0, 45.0, 70.0],
+      "points": [0, 5, 12, 20]
+    },
+    "lisere": {
+      "_note": "Liseree de dolines alignees (karst de contact Barrois). Criteres resserres v2 : 100 m / 20 deg.",
+      "bonus": 10,
+      "rayon_m": 100.0,
+      "n_min": 3,
+      "std_max_deg": 20.0,
+      "en_score": true
+    },
+    "absorption": {
+      "poids": 18,
+      "seuils": [1000, 5000, 20000],
+      "points": [0, 6, 12, 18]
+    },
+    "densite_500m": {
+      "_note": "INFORMATIF UNIQUEMENT — ne discrimine plus dans le Barrois dense (> 50 voisines = 15 pts pour tout le monde). Colonne calculee et exposee mais non comptee dans le score.",
+      "poids": 0,
+      "seuils": [5, 20, 50],
+      "points": [3, 7, 11, 15]
+    },
+    "contact_geologique": {
+      "poids": 25,
+      "gradient_decay_m": 250,
+      "karstifiabilite": {
+        "_note": "Facteur multiplicatif 0-1 par CODE_LEG BD Charm-50. 1.0 = calcaire tithonien / oxfordien, 0.5 = craie campanienne (moins karstifiee), etc. 'default' si code absent.",
+        "default": 1.0,
+        "j1": 0.9,
+        "j2": 0.9,
+        "j3": 0.9,
+        "j4": 1.0,
+        "j5": 1.0,
+        "j6": 1.0,
+        "j7": 1.0,
+        "j8": 1.0,
+        "j9": 1.0,
+        "c1": 0.4,
+        "c2": 0.5,
+        "c3": 0.5,
+        "c4": 0.5,
+        "c5": 0.5,
+        "c6": 0.3,
+        "c7": 0.3,
+        "e":  0.7,
+        "t":  0.6
+      }
+    },
+    "tpi_500m": {
+      "_note": "Topographic Position Index — altitude doline vs moyenne voisines 500 m. TPI > 0 = doline sommitale = point d'absorption direct (bonus). TPI < -20 = fond de vallon (moins discriminant).",
+      "poids": 8,
+      "seuils": [-20.0, 0.0, 20.0],
+      "points": [0, 3, 5, 8]
+    }
+  },
+  "bloc_b": {
+    "_note": "Bloc B conserve pour compatibilite config mais N'EST PAS utilise dans le score (supprime suite validation IKarre 2026).",
+    "distance_galeries_m_seuil": 500,
+    "poids_distance": 30,
+    "poids_couloir": 25,
+    "poids_alignement": 25,
+    "bonus_exceptionnel_hors_couloir": 20
+  }
+}

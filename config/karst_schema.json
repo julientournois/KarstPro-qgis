@@ -1,0 +1,74 @@
+{
+  "_comment": "Contrat de schema partage entre KarstPro (moteur Processing) et Karst Entry (saisie). Source de verite unique. Toute couche echangee entre les deux plugins respecte ces noms de champs. Convention : noyau commun en anglais (name, type, reference, comment), extensions specifiques par couche. CRS canonique EPSG:2154. Ne pas diverger sans bumper la version. v1.2.0 : alignement cavites <-> cavites_connues (promotion 1:1). cavites = noyau + prospection + decouverte ; cavites_connues = idem + localisation admin (geocodee a la promotion). Champ reference auto-genere a l'import (format {fid}-{last3X}{last3Y}).",
+  "schema_version": "1.2.0",
+  "crs": "EPSG:2154",
+
+  "core_cavite": ["name", "type", "reference", "comment"],
+
+  "layers": {
+    "cavites_connues": {
+      "_role": "Inventaire des cavites connues d'une zone d'etude. Produit/edite par Karst Entry, lu par KarstPro (prep, proximite scoring). Cible de promotion des cavites terrain.",
+      "geometry": "Point",
+      "fields": {
+        "name": "str",
+        "type": "str",
+        "reference": "str",
+        "comment": "str",
+        "dim_entree_longueur": "float",
+        "dim_entree_largeur": "float",
+        "developpement_estime": "float",
+        "topographiable": "int64",
+        "lien_topo": "str",
+        "date_disc": "str",
+        "date_expl": "str",
+        "prot_id": "str",
+        "explorers": "str",
+        "photos": "str",
+        "commune": "str",
+        "code_insee": "str",
+        "code_postal": "str",
+        "departement": "str",
+        "code_dept": "str"
+      }
+    },
+
+    "cavites": {
+      "_role": "Cavites decouvertes sur le terrain pendant la prospection (QField). Produit par KarstPro, editee au retour terrain. Aligne sur cavites_connues MOINS les champs de bureau : localisation admin (commune/code_*, geocodee a la promotion) et prot_id (identifiant de protection, rempli au bureau dans l'inventaire). La reference est auto-generee a la promotion si vide.",
+      "geometry": "Point",
+      "fields": {
+        "name": "str",
+        "type": "str",
+        "reference": "str",
+        "comment": "str",
+        "dim_entree_longueur": "float",
+        "dim_entree_largeur": "float",
+        "developpement_estime": "float",
+        "topographiable": "int64",
+        "lien_topo": "str",
+        "date_disc": "str",
+        "date_expl": "str",
+        "explorers": "str",
+        "photos": "str"
+      }
+    },
+
+    "tracages": {
+      "_role": "Tracages hydrologiques perte->resurgence. Propre a Karst Entry (LineString, pas une cavite) : le champ texte reste 'commentaire' (extension francaise, hors noyau). Futur input KarstPro (detection resurgences, roadmap).",
+      "geometry": "LineString",
+      "fields": {
+        "point_injection": "str",
+        "point_sortie": "str",
+        "colorant": "str",
+        "resultat": "str",
+        "date_injection": "str",
+        "date_detection": "str",
+        "temps_transit": "str",
+        "distance_m": "float",
+        "operateurs": "str",
+        "commentaire": "str"
+      }
+    }
+  },
+
+  "_internal_note": "Les couches 'dolines' et 'cibles' sont internes a KarstPro (non editees par Karst Entry). Elles reutilisent neanmoins le noyau cavite (name/type/comment) sur la couche cibles pour coherence intra-gpkg."
+}
