@@ -17,50 +17,31 @@
 
 ## Installation — Windows
 
-### Dépendances Python
+KarstPro est distribué sous forme d'une **archive ZIP prête à l'emploi**.
 
-Double-cliquer sur **`install_deps.bat`** (à la racine du repo) — le script détecte
-automatiquement QGIS 3 ou 4 dans `C:\Program Files` et `D:\Program Files` et installe
-les dépendances dans le Python bundlé avec QGIS.
+1. Décompresser l'archive `KarstPro_v<version>_<date>.zip` reçue.
+2. Double-cliquer sur **`install_windows.bat`**. Le script copie le plugin dans
+   le profil QGIS **et** installe les dépendances Python — en une seule fois.
+3. Redémarrer QGIS, puis **Extensions → Gérer et installer des extensions →
+   Installées** et cocher **KarstPro**.
 
-> ⚠️ Si Windows demande une confirmation UAC ou si l'installation échoue,
-> relancer en **clic droit → Exécuter en tant qu'administrateur**.
+> ⚠️ Si l'installation des dépendances échoue (UAC, antivirus, ou Python de
+> QGIS introuvable), relancer le script en **clic droit → Exécuter en tant
+> qu'administrateur**, ou passer par la méthode manuelle ci-dessous.
 
-En cas d'installation QGIS dans un dossier non standard, éditer la ligne en haut
-du script :
-```bat
-set PYTHON_EXE=C:\chemin\vers\QGIS\apps\Python312\python.exe
-```
+### Installation manuelle (optionnel)
 
-> **Méthode universelle (si le script échoue, toutes plateformes)** — depuis
-> QGIS : **Extensions → Console Python**, puis taper
-> `import karstpro.install_dependencies`. Cette méthode vise toujours le bon
-> Python (celui de QGIS), sans aucune détection de chemin.
-
-### Déploiement du plugin (après chaque modification des sources)
-
-**QGIS 4.0.2 :**
-```powershell
-Copy-Item -Path ".\karstpro\*" `
-  -Destination "$env:APPDATA\QGIS\QGIS4\profiles\default\python\plugins\karstpro\" `
-  -Recurse -Force
-```
-
-**QGIS 3.40 :**
-```powershell
-Copy-Item -Path ".\karstpro\*" `
-  -Destination "$env:APPDATA\QGIS\QGIS3\profiles\default\python\plugins\karstpro\" `
-  -Recurse -Force
-```
-
-Ou utiliser `deploy_plugin.bat` à la racine du repo — détecte automatiquement QGIS 4.x ou 3.x.
+1. **Plugin** — QGIS → **Extensions → Installer depuis un ZIP** → choisir
+   `karstpro.zip` (inclus dans l'archive).
+2. **Dépendances** — QGIS → **Extensions → Console Python**, puis exécuter
+   `import karstpro.install_dependencies`. Cette commande vise toujours le bon
+   Python (celui de QGIS), sans détection de chemin.
 
 ---
 
 ## Installation — Linux
 
-Testé sur Ubuntu 22.04 / 24.04 et Debian 12. Les commandes sont identiques sur
-les distributions basées sur apt (Mint, Pop!_OS…).
+Testé sur Ubuntu 22.04 / 24.04 et Debian 12 (et dérivés apt : Mint, Pop!_OS…).
 
 ### 1. Installer QGIS
 
@@ -83,61 +64,22 @@ sudo apt install qgis qgis-plugin-grass python3-qgis
 > la ligne `deb` (`bookworm`, `jammy`…). Guide complet :
 > [download.qgis.org](https://qgis.org/resources/installation-guide/).
 
-### 2. Dépendances Python
+### 2. Installer KarstPro
 
-Rendre le script exécutable puis le lancer depuis la racine du repo :
+1. Décompresser l'archive `KarstPro_v<version>_<date>.zip`.
+2. Rendre le script exécutable puis le lancer : `chmod +x install_linux.sh`
+   puis `./install_linux.sh`. Il copie le plugin dans le profil QGIS et
+   installe les dépendances (détection automatique apt / conda / venv).
+3. Redémarrer QGIS, puis **Extensions → … → Installées** et cocher **KarstPro**.
 
-```bash
-chmod +x install_deps.sh
-./install_deps.sh
-```
+> **Flatpak / Snap** : le Python de QGIS est isolé du système. Installer plutôt
+> les dépendances depuis QGIS → **Console Python** :
+> `import karstpro.install_dependencies`.
 
-Le script détecte automatiquement QGIS (apt, conda/mamba, venv) et choisit
-les bonnes options pip (`--user`, installation système ou venv).
+### Installation manuelle (optionnel)
 
-Cas particuliers gérés automatiquement :
-- **apt** (`python3-qgis`) → `pip install --user`
-- **conda/mamba** (env actif) → `pip install` sans `--user`
-- **root** → installation système
-- **Flatpak** → instructions spécifiques affichées, pas d'installation automatique
-
-> **Méthode universelle (repli, notamment Flatpak/Snap)** — depuis QGIS :
-> **Extensions → Console Python**, puis `import karstpro.install_dependencies`.
-> Vise toujours le bon Python (celui de QGIS).
-
-### 3. Déploiement du plugin
-
-Le dossier plugins QGIS est `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/`
-(identique pour QGIS 3.x et 4.x sur Linux) :
-
-```bash
-PLUGIN_DIR="$HOME/.local/share/QGIS/QGIS3/profiles/default/python/plugins/karstpro"
-mkdir -p "$PLUGIN_DIR"
-cp -r karstpro/* "$PLUGIN_DIR/"
-```
-
-Pour un déploiement rapide après modification des sources :
-
-```bash
-# Depuis la racine du repo
-rsync -av --delete karstpro/ \
-    ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/karstpro/
-```
-
-> ⚠️ QGIS 4.x sur Linux peut utiliser un chemin différent selon la version
-> (`QGIS4` au lieu de `QGIS3`). Vérifier avec :
-> ```bash
-> python3 -c "from qgis.core import QgsApplication; \
->     print(QgsApplication.qgisSettingsDirPath())"
-> ```
-
-### 4. Activer le plugin dans QGIS
-
-Même procédure que Windows :
-
-1. Lancer QGIS
-2. Menu **Extensions → Gérer et installer des extensions → Installées** → activer **KarstPro**
-3. Les algorithmes apparaissent dans : **Traitement → Boîte à outils → KarstPro**
+1. **Plugin** — QGIS → **Extensions → Installer depuis un ZIP** → `karstpro.zip`.
+2. **Dépendances** — Console Python de QGIS : `import karstpro.install_dependencies`.
 
 ### Notes spécifiques Linux
 
@@ -165,7 +107,7 @@ plugins/
     config/
 ```
 
-> ⚠️ `metadata.txt` doit être **à l'intérieur** du dossier `karstpro/`, pas à la racine du repo.
+> ⚠️ `metadata.txt` doit être **à l'intérieur** du dossier `karstpro/`.
 
 ---
 
@@ -181,9 +123,9 @@ plugins/
 
 ---
 
-# Guide d'utilisation
+# Guide pas à pas
 
-## Guide pas à pas illustré — du bureau au terrain
+## Cycle complet — du bureau au terrain
 
 Ce parcours suit **un cycle de sortie complet**, étape par étape, avec captures.
 En résumé :
@@ -195,7 +137,7 @@ En résumé :
 5. **Mettre à jour l'inventaire** des cavités connues + générer le rapport.
 6. *(optionnel)* **Recalculer les cibles** puis **exporter pour l'analyse MLL**.
 
-La section *Pré-sortie* qui suit détaille ensuite chaque paramètre.
+La section *Référence détaillée* (plus bas) détaille ensuite chaque paramètre.
 
 ### Trouver les outils KarstPro
 
@@ -353,6 +295,10 @@ L'export produit un prompt `mll_prompt_*.txt` (rapport complet inclus), les
 waypoints `cibles_*.gpx` (cibles rouges et oranges) et un journal `.log`.
 
 ---
+
+# Référence détaillée
+
+> Description complète des paramètres, du scoring, des formats et de l'export. À consulter au besoin — le *Guide pas à pas* ci-dessus suffit pour une première sortie.
 
 ## Pré-sortie (bureau QGIS)
 
@@ -618,7 +564,7 @@ La topographie souterraine, si fournie, renseigne les colonnes informatives
 `comp_dist_reseau_m` et `comp_in_couloir` mais **n'intervient pas dans le calcul
 du score ni des priorités**.
 
-> **Pourquoi ce choix ?** Voir section *Validation IKarre* ci-dessous.
+> **Pourquoi ce choix ?** Le Bloc B positionnel (distance au réseau connu) a été retiré : sur les jeux de test, il n'améliorait pas la priorisation et pénalisait les zones peu explorées — précisément les cibles d'une prospection.
 
 ---
 
@@ -781,59 +727,6 @@ connue dans QGIS ou dans l'analyse MLL.
 
 ---
 
-### Validation IKarre — résultats v2 (scoring + seuils recalibrés)
-
-La méthode a été validée sur **130 cavités spéléologiques réelles** issues de la
-base IKarre (inventaire spéléologique régional), sur 3 communes du Grand Est.
-Les chiffres ci-dessous correspondent au scoring v2.0 avec les seuils recalibrés
-(P1 ≥ 55, P2 ≥ 35, P3 ≥ 25) — voir section *Scoring refactor v2* pour le détail.
-
-| Commune | Dept. | Cavités | Rappel P1+P2 | z (vs aléatoire) | Rôle |
-|---------|-------|---------|--------------|------------------|------|
-| Trois-Fontaines-l'Abbaye | Marne 51 | 70 | 54,3 % | 3,9 | calibration |
-| Sommelonne | Meuse 55 | 25 | 32,0 % | 4,7 | calibration |
-| Ancerville | Meuse 55 | 35 | 28,6 % | 2,9 | calibration |
-| **Pierre-la-Treiche** | M-&-M 54 | 67 | 38,8 % | **1,1** | **hors-échantillon** |
-| **Lisle-en-Rigault** | Meuse 55 | 102 | 23,5 % | **−0,7** | **hors-échantillon** |
-
-Rappel mesuré à un rayon de correspondance de **50 m**. Le `z` mesure l'écart au
-modèle nul (permutation des labels) : z ≥ 2 = signal réel.
-
-> **⚠️ Le score à poids manuels NE généralise PAS.** Les trois communes de
-> calibration affichent un z fort (2,9–4,7), mais les deux communes jamais vues
-> retombent au niveau du hasard (z ≤ 1,1 ; Lisle, même karst que la calibration,
-> est même légèrement sous le hasard). C'est la signature d'un **sur-ajustement**
-> des seuils sur leurs propres données. La priorisation P1/P2/P3 doit être
-> considérée comme **exploratoire**, non comme une capacité prédictive validée.
-
-**Ce qui EST validé (leave-one-commune-out, 5 communes) :**
-
-- Le **signal morphométrique existe et généralise** dans un même domaine
-  géologique : une pondération *apprise* (régression logistique, `prototypes/`)
-  atteint **AUC 0,72** hors-échantillon sur le Barrois, contre **0,56** pour les
-  poids manuels actuels. → les poids sont à refaire, l'idée tient.
-- La généralisation **s'arrête à la frontière géologique** : un modèle Barrois
-  appliqué au bajocien (Pierre-la-Treiche) retombe à AUC 0,45. Un modèle par
-  massif est nécessaire.
-- L'**inventaire LiDAR des dolines** et le **workflow terrain QField** sont, eux,
-  pleinement opérationnels et indépendants de la qualité du score.
-- La topo testée sur Ancerville (261 passages, réseau réel) **n'a modifié aucune
-  priorité** sur les 35 cavités IKarre.
-- **~18 % de cavités IKarre restent hors-seuil (< 25) toutes communes confondues** :
-  ces cavités n'ont pas d'empreinte morphologique détectable dans le LiDAR 1 m
-  (entrée ponctuelle, remplissage, épikarst). C'est la limite physique de la méthode,
-  non améliorable par le scoring.
-
-**Pourquoi le Bloc B a été supprimé :** le score positionnel médian des cavités
-IKarre matchées sur Ancerville (261 passages topo) était de 5,2/100 — insuffisant
-pour franchir un seuil. La formule de mélange 50/50 *dégradait* les scores dans
-les zones peu explorées, précisément les zones cibles d'une prospection.
-
-**Conclusion :** le Bloc A seul est plus robuste, plus universel, et valide
-empiriquement sur le jeu de données disponible.
-
----
-
 ### Cavités connues — `cavite_connue_proche` (informatif, hors score)
 
 Si une couche de cavités connues est fournie lors de la préparation, **et/ou** si des
@@ -909,11 +802,6 @@ Cette section documente les décisions prises lors de la revue de scoring v2 (20
 | Composante | Justification |
 |-----------|---------------|
 | TPI 500 m (8 pts) | Différencie les dolines sommitales (absorption directe) des dolines en fond de vallon. Information absente de toutes les autres composantes. |
-
-**Impact attendu sur le rappel IKarre :**
-Les simulations analytiques sur les 3 communes de validation (Trois-Fontaines, Sommelonne,
-Ancerville) prévoient un rappel P1+P2 stable ou légèrement amélioré, avec une meilleure
-précision (moins de faux positifs liés à la circularité et à la densité).
 
 ---
 
@@ -1164,174 +1052,3 @@ Le fichier `rapport_<secteur>_<date>.docx` est créé dans le dossier courant. I
   `comp_in_couloir`, `comp_densite_500m` pour une analyse complète des composantes du score
 - Note explicite à MLL sur les cibles de découverte (dolines profondes hors réseau connu)
 - Section clusters pré-calculés dans le prompt pour que MLL organise directement par journée
-
----
-
-# Troubleshooting
-
-## Géorisques — couche `cavites_georisques` absente ou vide
-
-**Symptôme :** Le GPKG ne contient pas de couche `cavites_georisques`, ou la couche
-est présente mais vide alors qu'Infoterre affiche des cavités sur la zone.
-
-**Causes possibles :**
-
-1. **Bbox mal positionnée** — Le WFS Géorisques utilise les coordonnées de la zone
-   dessinée dans QGIS. Vérifier que le projet QGIS est en EPSG:2154 ou que la
-   reprojection automatique s'est bien déclenchée (voir la log QGIS).
-
-2. **Base Géorisques lacunaire dans la zone** — La base nationale des cavités
-   (`CAVITE_LOCALISEE`) est exhaustive dans les grands massifs calcaires (Dordogne,
-   Jura, Ardèche) mais peu renseignée dans les karsts sous couverture
-   (Champagne-Ardenne, Lorraine). Ce message dans la log est normal :
-   ```
-   Géorisques : aucune cavité référencée dans la zone
-   ```
-
-3. **Données Infoterre ≠ Géorisques** — Infoterre affiche aussi les forages BSS
-   (Banque du Sous-Sol) qui ne sont pas des cavités spéléologiques. Seules les
-   entrées de type `CAVITE_LOCALISEE` (cavités souterraines non minières) sont
-   importées par KarstPro.
-
-4. **Service Géorisques temporairement indisponible** — Le message dans la log sera :
-   ```
-   Géorisques ignoré : ...
-   ```
-   Relancer l'algorithme résout généralement le problème.
-
----
-
-## Téléchargement LiDAR — dalles trop lentes
-
-**Symptôme :** Le téléchargement avance mais prend 30–60 min pour 10–20 dalles.
-Le CDN IGN bride les téléchargements automatisés sur `data.geopf.fr`.
-
-**Solution — téléchargement manuel via gestionnaire de téléchargement :**
-
-1. Lancer une première fois **Préparer une sortie** — même si c'est lent, KarstPro
-   génère immédiatement un fichier `dalles_a_telecharger.txt` dans le dossier
-   `<sortie>/lidar_work/laz/` et affiche son chemin dans la log QGIS.
-2. Annuler l'algorithme si souhaité.
-3. Ouvrir `dalles_a_telecharger.txt` — il contient une URL par ligne.
-4. Coller les liens dans un gestionnaire de téléchargement
-   (**Free Download Manager**, **JDownloader**, ou `wget -i dalles_a_telecharger.txt`)
-   — généralement 5–10× plus rapide qu'via l'API.
-5. Déposer les fichiers `.copc.laz` téléchargés dans le dossier `lidar_work/laz/`
-   (même dossier que le fichier `.txt`), **sans renommer les fichiers**.
-6. Relancer **Préparer une sortie** — KarstPro détecte les fichiers complets et
-   passe directement à la génération MNT sans re-télécharger.
-
-> Les dalles déjà en cache sont réutilisées automatiquement pour toute zone
-> qui chevauche un secteur déjà traité.
-
----
-
-## Téléchargement LiDAR — `IncompleteRead` / connexion coupée
-
-**Symptôme :** Le téléchargement d'une dalle s'interrompt avec une erreur
-`IncompleteRead` ou `ChunkedEncodingError`. Le CDN IGN (`data.geopf.fr`) coupe
-la connexion en milieu de téléchargement, surtout sur les grosses dalles (> 100 MB)
-et après un burst de téléchargements parallèles.
-
-**Solution intégrée :** Le téléchargement reprend automatiquement là où il s'est
-arrêté (header `Range`) avec jusqu'à 15 tentatives et un backoff exponentiel
-(2ˢ secondes entre chaque essai, plafonné à 60 s). Aucune action requise pendant
-les tentatives — laisser tourner.
-
-**Si l'erreur persiste après 15 tentatives :** KarstPro affiche un message clair :
-
-```
-⚠ Échec définitif : LHD_FXX_xxxx_xxxx_….copc.laz
-RuntimeError: 1 dalle(s) impossible(s) à télécharger (CDN IGN instable)
-Solution : télécharger manuellement via dalles_a_telecharger.txt ...
-URLs : https://data.geopf.fr/telechargement/…
-```
-
-Suivre la procédure de téléchargement manuel (voir section ci-dessus) :
-ouvrir `lidar_work/laz/dalles_a_telecharger.txt`, copier l'URL de la dalle
-en échec, la télécharger via navigateur ou gestionnaire de téléchargement,
-déposer le `.copc.laz` dans le dossier `laz/`, puis relancer KarstPro.
-Les dalles déjà complètes en cache ne sont pas re-téléchargées.
-
----
-
-## Téléchargement LiDAR — HTTP 502 Bad Gateway
-
-**Symptôme :**
-```
-RuntimeError: Échec téléchargement ... LHD_FXX_…copc.laz : HTTP 502
-```
-
-**Cause :** Erreur transitoire côté serveur IGN (surcharge, redémarrage de nœud CDN).
-
-**Solution intégrée :** Les codes HTTP 429, 500, 502, 503, 504 déclenchent automatiquement
-une nouvelle tentative avec backoff exponentiel, jusqu'à 15 essais. Le 502 ne provoque
-plus d'arrêt immédiat.
-
-**Si l'erreur persiste :** Attendre quelques minutes et relancer. Les dalles déjà présentes
-sur disque sont réutilisées.
-
----
-
-## Export MLL — aucun fichier créé, pas de sous-dossier
-
-**Symptôme :** L'algorithme se termine sans erreur visible mais le dossier
-`mll_export_<secteur>_<date>/` n'est pas créé.
-
-**Cause :** Les fichiers du plugin en cours de développement (`Projects/karstpro/`)
-ne sont pas synchronisés avec le dossier plugins QGIS
-(`%APPDATA%\QGIS\QGIS4\profiles\default\python\plugins\karstpro\`).
-QGIS exécute l'ancienne version.
-
-**Solution :**
-```powershell
-Copy-Item -Path ".\karstpro\*" `
-  -Destination "$env:APPDATA\QGIS\QGIS4\profiles\default\python\plugins\karstpro\" `
-  -Recurse -Force
-```
-Puis recharger le plugin dans QGIS (Plugin Reloader, ou redémarrer QGIS).
-
-**Vérification :** Comparer la date de modification de
-`%APPDATA%\…\plugins\karstpro\algorithms\karst_export_mll_algorithm.py`
-avec celle du fichier source.
-
----
-
-## Export MLL — erreur silencieuse sans message dans la log QGIS
-
-**Symptôme :** L'algo se termine avec une icône d'erreur rouge mais la log QGIS
-ne montre aucun détail utile.
-
-**Cause :** Une exception Python non rattrapée dans `processAlgorithm` est avalée
-par QGIS sans afficher la traceback.
-
-**Solution intégrée :** `processAlgorithm` est enveloppé dans un `try/except` qui
-affiche la traceback complète via `feedback.reportError(traceback.format_exc())`.
-Consulter la fenêtre **Journal des messages** (Vue → Panneaux → Journal des messages)
-→ onglet **Traitement** pour voir la cause réelle.
-
----
-
-## Points QField sans coordonnées (n'apparaissent pas sur la carte)
-
-**Symptôme :** Une cavité saisie dans QField apparaît dans la liste
-des attributs mais pas sur la carte — les coordonnées sont NULL.
-
-**Cause :** Sur les projets créés avant la version actuelle, la couche `cavites`
-était déclarée en type géométrie générique `GEOMETRY` (au lieu de `POINT`).
-QField ne la reconnaissait alors pas comme couche de points et n'attachait
-aucune position GPS — seuls les attributs étaient enregistrés.
-
-**Solution pour les nouveaux projets :** Relancer **Préparer une sortie** —
-le `.gpkg` généré déclare `cavites` en `POINT` et le `.qgs` configure QFieldSync
-avec `geomSource=gps`. Le point est placé automatiquement à la position GPS dès
-l'ouverture du formulaire. Une contrainte bloque aussi l'enregistrement sans
-géométrie (utile en cas de perte de fix GPS sous couvert forestier).
-
-**Solution de contournement (projet existant) :** Dans QField, activer le GPS,
-puis éditer le point sans coordonnées → bouton **"Snapper sur le GPS"** dans
-le formulaire pour renseigner la géométrie manuellement.
-
-**Pour les points déjà saisis sans coordonnées dans QGIS :** Les supprimer et
-les ressaisir sur le terrain, ou les placer manuellement avec l'outil de
-numérisation QGIS si la position est connue.
