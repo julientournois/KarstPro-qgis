@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="KarstPro" width="360">
+  <img src="logo.png" alt="KarstPro" width="460">
 </p>
 
 <p align="center">
