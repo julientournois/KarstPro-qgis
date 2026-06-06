@@ -1,0 +1,40 @@
+﻿KarstPro v1.0.0 - 2026-06-06
+
+--------------------------------------------------------------------
+INSTALLATION DU PLUGIN
+--------------------------------------------------------------------
+
+Methode 1 - via QGIS (toutes plateformes, recommandee)
+  1. Ouvrir QGIS
+  2. Extensions > Installer/Gerer les extensions > Installer depuis un ZIP
+  3. Choisir le fichier  karstpro.zip  de ce dossier
+  4. Installer, puis cocher "KarstPro" pour l'activer
+
+Methode 2 - script automatique (plugin + dependances)
+  Windows : double-cliquer sur  install_windows.bat
+  Linux   : rendre executable puis lancer  ./install_linux.sh
+            (chmod +x install_linux.sh)
+
+--------------------------------------------------------------------
+DEPENDANCES PYTHON (obligatoires)
+--------------------------------------------------------------------
+KarstPro a besoin de : geopandas, rasterio, reportlab, whitebox
+(numpy, requests et GDAL sont deja fournis par QGIS).
+
+Les scripts install_windows.bat / install_linux.sh les installent
+automatiquement. Si cela echoue, ou apres une install par ZIP :
+
+  Methode universelle et fiable (toutes plateformes) :
+    QGIS > Extensions > Console Python, puis taper :
+        import karstpro.install_dependencies
+
+  Cette methode vise toujours le bon Python (celui de QGIS).
+
+--------------------------------------------------------------------
+UTILISATION
+--------------------------------------------------------------------
+  Les outils apparaissent dans la Boite a outils de Traitement,
+  groupe "KarstPro".
+  Guide illustre complet : KarstPro_Documentation.pdf
+
+QGIS minimum : voir metadata.txt (qgisMinimumVersion).
