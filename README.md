@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/QGIS-%E2%89%A5%203.34-589632?logo=qgis&logoColor=white" alt="QGIS ≥ 3.34">
-  <img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white" alt="Python 3.12+">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/Plateformes-Windows%20%7C%20Linux-555" alt="Windows | Linux">
   <img src="https://img.shields.io/badge/Licence-PolyForm%20Noncommercial%201.0-BB6A2E" alt="Licence PolyForm Noncommercial 1.0">
 </p>
@@ -31,11 +31,16 @@ QField prêt pour le terrain et un rapport structuré.
 
 - 🛰️ **Télécharge le LiDAR HD IGN** automatiquement sur la zone dessinée
   (COPC LAZ, lecture partielle par bbox — pas de téléchargement inutile).
-- ⛰️ **Génère un MNT 50 cm** et **détecte les dolines** par remplissage des
-  dépressions (Fill sinks) + vectorisation.
-- 🎯 **Score chaque doline sur 100** à partir de 8 composantes morphométriques
-  (profondeur, contact géologique, pente, absorption, TPI…) et les classe en
-  cibles **P1 / P2 / P3**.
+- ⛰️ **Génère un MNT 1 m** et **détecte les dolines** par remplissage des
+  dépressions (Fill sinks) + vectorisation, **et les gouffres / puits
+  verticaux** par leur signature de vide LiDAR (couche `gouffres`). Localise
+  aussi les **points d'eau karstiques référencés** (sources, pertes, inversacs,
+  résurgences — BD Topo, couche `bdtopo_eau`) pour les entrées noyées,
+  invisibles au MNT (le LiDAR réfléchit sur l'eau).
+- 🎯 **Priorise chaque doline en P1 / P2 / P3** : modèle appris appliqué
+  automatiquement quand la zone est dans un domaine géologique validé
+  (Barrois aujourd'hui), sinon score morphométrique exploratoire sur
+  8 composantes (profondeur, contact géologique, pente, absorption, TPI…).
 - 📱 **Prépare un projet QField** clé en main : symbologie par priorité,
   saisie GPS des nouvelles cavités, couches de référence en lecture seule.
 - 🔄 **Synchronise le retour terrain** : promotion des cavités saisies vers
@@ -105,10 +110,16 @@ Les outils apparaissent ensuite dans **Traitement → Boîte à outils → Karst
 
 ## ⚠️ Portée de l'outil
 
-KarstPro **priorise** la prospection — il ne la remplace pas. La priorisation
-P1/P2/P3 est un **indice morphologique exploratoire**, pas une prédiction de
-spéléogenèse : la validation terrain reste indispensable. L'inventaire LiDAR et
-le workflow bureau ↔ terrain, eux, sont pleinement opérationnels.
+KarstPro **priorise** la prospection — il ne la remplace pas. Sur un domaine
+géologique validé, un **modèle appris** pilote la priorisation (AUC 0,65–0,72
+hors-échantillon, contre ~0,57 pour les poids manuels). Deux domaines sont
+livrés : **Barrois** (appliqué automatiquement) et **Jura plateau** (opt-in, à
+activer si l'on sait être sur un plateau à gouffres). Hors domaine, la
+priorisation P1/P2/P3 retombe sur un **indice morphologique exploratoire**.
+L'AUC plafonne à ~0,65 par domaine — une limite *physique* de la morphologie de
+surface : ce n'est jamais une prédiction de spéléogenèse, la validation terrain
+reste indispensable. L'inventaire LiDAR et le workflow bureau ↔ terrain, eux,
+sont pleinement opérationnels.
 
 ---
 
