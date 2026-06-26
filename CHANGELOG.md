@@ -3,6 +3,57 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.2.1] — 2026-06-26
+
+### Ajouté
+- **Fond ortho IGN (satellite)** dans le projet généré : couche WMS
+  Géoplateforme `ORTHOIMAGERY.ORTHOPHOTOS` (20 cm, France entière), placée
+  entre l'ombrage MNT et le Plan IGN. **Décochée par défaut** — l'utilisateur
+  l'active à la demande ; une fois cochée, l'ombrage MNT (70 %) retombe dessus
+  pour une vue « satellite + relief » de prospection. Source officielle IGN
+  (même origine que le LiDAR), gratuite et légale — à l'inverse des tuiles
+  Google XYZ. Exclue du packaging QField.
+- **Coordonnées UTM WGS84 (mètres)** dans les exports CSV et le rapport PDF :
+  en plus du Lambert-93 et du WGS84 décimal, chaque doline reçoit son easting /
+  northing UTM et sa zone (`x_utm`, `y_utm`, `utm_zone`). Zone calculée
+  automatiquement depuis la longitude (la France couvre les zones 30/31/32 N).
+  Conversion en pur Python (Transverse Mercator de Snyder), sans `pyproj`
+  (non thread-safe sous QGIS 4.0.2), validée à moins d'1 cm.
+- **Filtre faux positifs anthropiques sur les dolines** (BD Topo carrières /
+  zones d'activité) : une carrière est une vraie dépression mais pas un karst.
+  Les dolines tombant sur une emprise anthropique sont **déclassées en gris**
+  (colonne `flag_anthropique` conservée, score préservé, jamais supprimées),
+  réactivable depuis la fenêtre de préparation. Réutilise le mécanisme déjà en
+  place pour les gouffres.
+- **Boucle d'apprentissage terrain** : champ `interet` sur les cibles
+  (-1 non visité / 0 rien / 1 indice / 2 cavité), éditable au formulaire dans
+  QField (géométrie verrouillée), et extraction automatique d'un CSV cumulatif
+  `labels_terrain.csv` à la synchronisation — base pour le réentraînement des
+  modèles de scoring.
+
+### Performance
+- **Détection des dolines** vectorisée : la profondeur et l'altitude par
+  polygone passent d'une boucle `rasterize(MNT entier)` par doline à une seule
+  passe `rasterize` étiquetée + `np.maximum.at`. Complexité O(n × H × W) →
+  O(H × W) — gain proportionnel au nombre de dolines (×100 à ×1000 sur un grand
+  secteur).
+- **Détection des gouffres** : le remplissage par diffusion (BFS Python visitant
+  chaque cellule NODATA, des millions en forêt) est remplacé par les composantes
+  connexes vectorisées de `rasterio.features.shapes` (C). 11,8 s → 3,4 s sur
+  Marnaval, résultat strictement identique.
+
+### Corrigé
+- **Symbologie des inventaires perdue** : les couches inventaire cavités /
+  traçages référencées dans le projet récupèrent leur style embarqué via
+  `loadDefaultStyle()` (style stocké dans la table `layer_styles` du GeoPackage
+  par Karst Entry).
+
+### Interne
+- **Intégration continue** (GitHub Actions) : `pytest` sur push et pull request
+  (Python 3.12). Découverte setuptools limitée à `karstpro*` (flat-layout) ;
+  tests d'intégration WhiteboxTools désactivés en CI (binaire Linux instable).
+- Config scoring JSON déplacée après les traçages dans la fenêtre de préparation.
+
 ## [1.2.0] — 2026-06-23
 
 ### Corrigé
