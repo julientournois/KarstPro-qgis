@@ -42,9 +42,12 @@ QField prêt pour le terrain et un rapport structuré.
   (Barrois aujourd'hui), sinon score morphométrique exploratoire sur
   8 composantes (profondeur, contact géologique, pente, absorption, TPI…).
 - 📱 **Prépare un projet QField** clé en main : symbologie par priorité,
-  saisie GPS des nouvelles cavités, couches de référence en lecture seule.
-- 🔄 **Synchronise le retour terrain** : promotion des cavités saisies vers
-  l'inventaire, géocodage administratif automatique, dédoublonnage.
+  saisie GPS des nouvelles cavités, **photo** sur les cavités/cibles/gouffres,
+  couches de référence en lecture seule.
+- 🔄 **Synchronise le retour terrain** : exporte un **CSV importable dans Karst
+  Entry** (cavités, cibles et gouffres à intérêt — référence + commune géocodée +
+  altitude + photos) et un **rapport PDF**. KarstPro détecte et va sur le
+  terrain ; Karst Entry gère l'inventaire et dédoublonne à l'import.
 - 📝 **Exporte pour analyse** : prompt structuré (clusters, contexte), waypoints
   GPX (Garmin, OruxMaps…) et couches GeoPackage avec ordre de visite optimisé.
 
@@ -83,16 +86,17 @@ Les outils apparaissent ensuite dans **Traitement → Boîte à outils → Karst
 ```
 ①  Préparer       ②  Envoyer        ③  Saisir         ④  Synchroniser
    (bureau)          (QFieldCloud)     (QField)          (retour terrain)
-   LiDAR → dolines   projet sur le     cavités GPS       inventaire mis à jour
-   scorées → QGIS    téléphone         sur le terrain    + rapport + export
+   LiDAR → dolines   projet sur le     cavités GPS +     CSV Karst Entry
+   scorées → QGIS    téléphone         photos terrain    + rapport PDF
 ```
 
 1. **Préparer une sortie** — dessiner la zone, KarstPro télécharge le LiDAR,
    détecte et score les dolines, et construit le projet QGIS/QField.
 2. **Envoyer sur le téléphone** via QFieldCloud.
 3. **Saisir** les cavités découvertes sur le terrain (position GPS).
-4. **Rapatrier et synchroniser** : l'inventaire s'enrichit, un rapport est
-   généré, l'export MLL prépare l'analyse.
+4. **Rapatrier et synchroniser** : un **CSV pour Karst Entry** + un **rapport
+   PDF** sont générés (à importer dans Karst Entry) ; l'export MLL prépare
+   l'analyse.
 
 *(Procédure illustrée complète dans la [documentation PDF](KarstPro_Documentation.pdf).)*
 

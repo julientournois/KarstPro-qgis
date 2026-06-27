@@ -3,6 +3,76 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.3.0] — 2026-06-27
+
+> Retour terrain réorienté vers **Karst Entry** : la synchro produit un CSV
+> importable (au lieu d'écrire dans une couche inventaire), avec photos et
+> altitude. KarstPro détecte et va sur le terrain ; Karst Entry gère l'inventaire.
+
+### Ajouté
+- **Export CSV Karst Entry au retour terrain** : la synchro produit
+  `<secteur>_terrain_karstentry_<horodatage>.csv` (délimiteur « ; », WGS84,
+  photos) importable directement dans Karst Entry. Rassemble **toutes les
+  trouvailles** : cavités saisies + cibles à intérêt (`interet ≥ 1`) + gouffres
+  visités à intérêt. Karst Entry dédoublonne à l'import.
+- **Photo terrain** sur les couches `cavites`, `cibles` (P1/P2/P3) et `gouffres`
+  (widget QField), intégrée au rapport PDF et au CSV.
+- **Sélecteur de MNT dans la synchro retour terrain** : couche raster ou .tif,
+  sous le GeoPackage. Sert au **calcul de l'altitude** des trouvailles. La plupart
+  des projets QField n'embarquent pas le MNT (trop lourd pour le cloud) — on peut
+  désormais le fournir au bureau. Sans MNT fourni, recherche auto à côté du gpkg.
+- **Gouffres exportés réinitialisés** au nettoyage de la synchro : un gouffre
+  visité à intérêt (`interet ≥ 1`), une fois son verdict exporté au CSV, repasse à
+  « non visité » (la couche de référence reste, on ne supprime pas un gouffre
+  connu) — évite la ré-export à la synchro suivante.
+- **Journaux `.log`** pour « Synchroniser le retour terrain » et « Mettre à jour
+  les cibles » (comme la préparation et l'export MLL) : tout le déroulé est
+  recopié dans un fichier daté, même si la fenêtre Processing se ferme.
+- **Couche `gouffres` éditable au formulaire QField** (`interet`/`comment`/
+  `photos`, géométrie verrouillée) pour le **suivi de visite**.
+- **Report des cibles déjà prospectées (couche « cibles visitées »)** : une
+  re-préparation ne perd plus les verdicts terrain. Les cibles sans intérêt
+  (`interet = 0`) sont conservées dans une archive séparée de la to-do P1/P2/P3,
+  et les nouvelles cibles tombant au même endroit (≤ 5 m) sont retirées de la
+  to-do. Case « Retirer les cibles déjà prospectées ou connues » (cochée par
+  défaut).
+- **Cibles connues retirées à la préparation** : si un inventaire est fourni, les
+  cibles à ≤ 3 m d'une cavité connue (inventaire utilisateur + Géorisques) sont
+  retirées de la to-do.
+
+### Modifié
+- **Synchro retour terrain : plus d'écriture directe dans une couche inventaire.**
+  Le paramètre « couche inventaire » est supprimé ; on génère un CSV pour Karst
+  Entry (qui dédoublonne à l'import). La synchro réutilise « Mettre à jour les
+  cibles » pour le nettoyage et **vide la couche tampon `cavites`** ; case
+  « Nettoyer les couches terrain » (cochée par défaut, destructive). Buffers GPS
+  par défaut ramenés à 3 m (sync et MAJ cibles).
+- **Paramètres avancés repliés par défaut** sur « Synchroniser le retour terrain »
+  (distance de regroupement GPS, dossier du rapport) et « Mettre à jour les
+  cibles » (couche source, buffer GPS) — comme la préparation et l'export MLL.
+- **Couche géologie désormais complète** (BD Charm-50, *toutes* les formations)
+  aux **couleurs officielles BRGM** ; le sous-ensemble karstifiable du score est
+  dérivé à la volée. L'export MLL inclut une section « Contexte géologique ».
+
+### Corrigé
+- **Verdicts de cibles correctement aiguillés** au retour terrain : seules les
+  cibles **sans intérêt** (`interet = 0`) vont dans « cibles visitées » ; celles à
+  **intérêt** (`interet ≥ 1`) partent à l'inventaire (CSV) et sont retirées de
+  P1/P2/P3 (avant, *toutes* les cibles visitées étaient archivées et aucune ne
+  rejoignait l'inventaire).
+- **Rapport PDF vide au retour terrain** : le PDF se construit désormais sur les
+  trouvailles collectées **avant** le nettoyage des couches — il inclut cavités,
+  cibles promues et gouffres (avec photos), au lieu d'être vide après nettoyage.
+
+### Retiré
+- **Indice de piégeage d'air froid (`cold_air_index`)** retiré de partout : calcul,
+  schéma GPKG, scoring, export MLL/GPX, modèle Barrois (retrainé sans), doc. Une
+  ablation LOCO sur le Barrois a montré que sa suppression **ne change pas l'AUC**
+  (0,7159 vs 0,7158) — non-discriminant, redondant avec profondeur et P/√S.
+- **Case « Inclure l'ombrage MNT dans le projet »** de la préparation : l'ombrage
+  MNT est désormais toujours ajouté (retirer la couche avant le packaging cloud
+  pour un paquet léger).
+
 ## [1.2.1] — 2026-06-26
 
 ### Ajouté
