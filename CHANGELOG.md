@@ -3,6 +3,137 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.5.0] — 2026-07-05
+
+### Ajouté
+- **Fichiers journaux rangés dans `logs/`.** Tous les `.log` générés par
+  « Préparer une sortie », « Synchroniser », « Mettre à jour les cibles » et
+  « Export MLL » vont désormais dans un sous-dossier `logs/` (à côté du
+  `.gpkg`), au lieu d'être écrits directement dans le dossier d'étude ou dans
+  `RapportSortie/`. Objectif : ne pas noyer les livrables (gpkg, CSV, PDF)
+  parmi des fichiers de diagnostic. « Refaire une étude » (repli sans
+  `karstpro_etude.json`) cherche le dernier log dans `logs/` **et** à la
+  racine du dossier, pour ne pas casser les études préparées avant ce
+  rangement.
+- **Filtre canopée sur les gouffres** : les vides de NODATA en zone de
+  végétation dense (bois, forêt, haie, verger…) ont la même signature qu'un
+  puits — indiscernables géométriquement. Nouveau filtre BD Topo
+  (`zone_de_vegetation`) : les candidats en canopée dense sont marqués
+  **sans intérêt** (`interet = 0`) au lieu de « non visité », avec une
+  nouvelle symbologie (gris atténué vs violet). Filtre PROBABILISTE : le
+  candidat reste dans la couche, jamais supprimé, réversible en un clic sur
+  le terrain. Vérifié sur Sommelonne : 88 % des 647 candidats détectés
+  étaient en zone de végétation.
+
+### Corrigé
+- **« Préparer une sortie » pouvait perdre des verdicts terrain non
+  synchronisés en cas de re-préparation.** Relancer la préparation sur un
+  dossier déjà existant (« Retirer les cibles déjà prospectées » coché, cas
+  par défaut) capturait tout `interet` non nul (0, 1 **ou** 2) vers l'archive
+  « cibles visitées » — exactement le risque que « Refaire une étude »
+  protège, mais **sans aucun garde-fou** sur cette voie. Une cavité ou un
+  indice confirmé mais jamais exporté au CSV Karst Entry pouvait ainsi être
+  piégé dans l'archive de façon définitive et invisible. Les 2 mêmes
+  garde-fous que « Refaire une étude » (cavités non synchronisées, cibles/
+  gouffres à intérêt non exportés) protègent désormais aussi la préparation.
+- **Nom de secteur non échappé dans les requêtes SQL du report des cibles
+  visitées.** Les noms de table étaient construits par concaténation directe
+  du nom de secteur (texte libre, saisi ou géocodé) — un secteur contenant un
+  guillemet double aurait produit du SQL invalide, voire injectable.
+  Échappement systématique des identifiants ajouté.
+- **Score morphologique faussé sur géométrie invalide.** Une doline dont
+  `surface_m2`/`profondeur_m` valait `NaN` (géométrie dégénérée en amont)
+  recevait le score **maximum** sur ces composantes (40 pts/129) au lieu du
+  minimum, la poussant vers une priorité rouge/orange plutôt que de
+  l'exclure.
+- **Facteur karstifiabilité toujours à sa valeur par défaut avec une couche
+  géologie locale.** `CODE_LEG` (index de légende BD Charm-50, propre à
+  chaque feuille) était renommé en `NOTATION` lors du chargement d'une
+  couche géologique locale, masquant le repli déjà prévu dans le calcul du
+  score de contact géologique — le facteur karstifiabilité retombait alors
+  toujours sur sa valeur par défaut (1.0) au lieu du facteur réel de la
+  formation.
+- **Robustesse du chargement du plugin** : garde-fous ajoutés contre un
+  double enregistrement du fournisseur d'algorithmes (rechargement du
+  plugin sans déchargement complet) et contre un déchargement avant
+  initialisation.
+- **Échappement XML manquant dans le générateur de projet `.qgs` hors QGIS**
+  (utilisé en tests/CLI headless uniquement — le chemin normal, via l'API
+  Qt, échappait déjà correctement) : un nom de secteur ou de couche
+  contenant `&`, `<`, `>` ou `"` aurait produit un fichier projet corrompu.
+- **Synchro retour terrain : les cibles à intérêt (indice/cavité) étaient
+  supprimées sans archive.** `remove_cibles_by_interet` retirait de P1/P2/P3
+  les cibles déjà exportées au CSV, mais sans jamais les déplacer dans
+  « cibles visitées ». Or seule cette archive protège un emplacement d'une
+  re-proposition à la préparation suivante (`suppress_already_visited`) : une
+  cavité confirmée pouvait ainsi revenir se faire re-détecter comme cible
+  neuve à l'infini. Remplacé par un archivage (`move_visited_to_archive` avec
+  `only_interet={1, 2}`), comme pour les cibles sans intérêt.
+
+## [1.4.0] — 2026-07-03
+
+> Nouvel algorithme **« Refaire une étude »** : rejoue une préparation existante
+> avec les mêmes paramètres (utile après un changement de traitement MNT/
+> détection/scoring), avec ses garde-fous anti-perte de données et le report du
+> verdict des gouffres à travers les re-préparations.
+
+### Ajouté
+- **« Refaire une étude »** (nouvel algorithme) : rejoue une préparation
+  existante **avec les mêmes paramètres**, sans re-saisie. Relit
+  `karstpro_etude.json` (écrit désormais à chaque préparation : paramètres +
+  version + date), ou à défaut **parse le dernier log** pour les anciennes
+  études (tri par horodatage du nom, robuste aux copies de dossier). Cases
+  « Régénérer le MNT » / « Re-télécharger le LiDAR » pour invalider le cache
+  `lidar_work/` selon ce qui a changé. Le retrait des cibles déjà
+  prospectées/connues est **forcé**.
+- **Garde-fous « Refaire une étude »** : bloque si des **cavités saisies non
+  synchronisées** sont présentes (couche `cavites` non vide — la prép réécrirait
+  le gpkg et les perdrait), ou si des **cibles/gouffres à intérêt** (indice/
+  cavité, `interet ≥ 1`) ne sont pas encore synchronisés (sans cela, la
+  re-préparation les piégeait dans l'archive « cibles visitées » sans jamais les
+  envoyer au CSV Karst Entry — le carryover capture tout `interet != -1`
+  indistinctement). Message explicite invitant à synchroniser d'abord, plutôt
+  qu'une synchro automatique silencieuse (effets de bord : appels réseau,
+  nouveaux rapports).
+- **Report du verdict des gouffres à travers une re-préparation.** La couche
+  `gouffres` est un signal physique (vide NODATA du MNT), régénérée entièrement
+  à chaque prép, sans lien avec le terrain — un gouffre déjà investigué
+  (`interet ≥ 1`) renaissait à `interet = -1` à chaque régénération. Le verdict
+  (`interet`/`comment`/`photos`) est désormais **reporté** sur le gouffre
+  fraîchement re-détecté à la même position (tolérance 3 m, appariement 1:1) —
+  comme pour les cibles, mais sans archivage (les gouffres restent une
+  référence permanente, jamais supprimés).
+- **Synchro sans trouvaille : plus de dossier/CSV/PDF vides.** Si rien à
+  exporter (aucune cavité saisie, aucune cible/gouffre à intérêt), la synchro
+  ne crée plus `RapportSortie/JJ-MM-AAAA/` ni de CSV/PDF — seul un journal, à
+  côté du `.gpkg` (comme « Mettre à jour les cibles »). L'extraction des labels
+  terrain et le nettoyage des couches continuent de tourner (indépendants des
+  « trouvailles » : un `interet = 0` alimente quand même l'apprentissage).
+- **Traçabilité couche source → destination** dans les journaux de « Synchroniser
+  le retour terrain » et « Mettre à jour les cibles » : pour chaque cible/gouffre/
+  cavité déplacé ou exporté, une ligne précise `nom : « couche source » →
+  « destination »` (archive « cibles visitées », ou « CSV Karst Entry »).
+
+### Corrigé
+- **« Refaire une étude » : dossier de sortie non cliquable** dans le panneau de
+  résultats (affiché en texte brut, contrairement à « Préparer une sortie »).
+  L'algorithme ne déclarait aucune sortie propre — ajout de `addOutput`
+  (dossier), comme les autres algorithmes.
+- **Libellés des cases à cocher raccourcis** (« Refaire une étude ») : les
+  `QCheckBox` ne justifient pas le texte comme les `QLabel` des autres
+  paramètres (même cause déjà rencontrée sur prép/sync).
+- **Installeur de dépendances fiabilisé** (`install_deps.bat` / `.sh`) : vérifie
+  désormais l'**import réel** des paquets par le Python de QGIS, au lieu de se
+  fier au code retour de `pip` (qui renvoie 0 même quand il bascule en `--user`,
+  invisible par QGIS si QGIS est dans `Program Files`). En cas d'échec sous
+  Windows, **relance automatiquement en administrateur** (UAC) ; message clair
+  (root / console Python QGIS) sinon. Évite le faux « installation réussie »
+  suivi de `ModuleNotFoundError` au premier lancement.
+- **Fenêtre whiteboxgeo.com au premier lancement** : la lib `whitebox` ouvrait la
+  page de don dans le navigateur lors du téléchargement initial du binaire WBT.
+  Neutralisé (`webbrowser.open` temporairement désactivé pendant l'init de
+  WhiteboxTools, puis restauré).
+
 ## [1.3.0] — 2026-06-27
 
 > Retour terrain réorienté vers **Karst Entry** : la synchro produit un CSV

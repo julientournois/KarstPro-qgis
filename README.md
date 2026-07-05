@@ -43,13 +43,18 @@ QField prêt pour le terrain et un rapport structuré.
   8 composantes (profondeur, contact géologique, pente, absorption, TPI…).
 - 📱 **Prépare un projet QField** clé en main : symbologie par priorité,
   saisie GPS des nouvelles cavités, **photo** sur les cavités/cibles/gouffres,
-  couches de référence en lecture seule.
+  couches de référence en lecture seule, et en option un fond **SCAN25 IGN**
+  (1/25 000, décoché par défaut, clé API personnelle à fournir — aucune clé
+  livrée avec le plugin).
 - 🔄 **Synchronise le retour terrain** : exporte un **CSV importable dans Karst
   Entry** (cavités, cibles et gouffres à intérêt — référence + commune géocodée +
   altitude + photos) et un **rapport PDF**. KarstPro détecte et va sur le
   terrain ; Karst Entry gère l'inventaire et dédoublonne à l'import.
 - 📝 **Exporte pour analyse** : prompt structuré (clusters, contexte), waypoints
   GPX (Garmin, OruxMaps…) et couches GeoPackage avec ordre de visite optimisé.
+- ♻️ **Refait une étude** avec les mêmes paramètres (utile après un changement
+  de traitement MNT/détection/scoring) — sans re-saisie, verdicts terrain
+  préservés, garde-fous anti-perte de données.
 
 ---
 
