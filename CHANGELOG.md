@@ -24,6 +24,12 @@ versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<versio
   candidat reste dans la couche, jamais supprimé, réversible en un clic sur
   le terrain. Vérifié sur Sommelonne : 88 % des 647 candidats détectés
   étaient en zone de végétation.
+- **Fond SCAN25 (carte IGN classique 1/25 000), à clé personnelle** : paramètre
+  avancé « Clé API SCAN25 personnelle » dans « Préparer une sortie ». SCAN25 est
+  un produit **payant** de l'IGN (inscription SIRET sur cartes.gouv.fr —
+  associations incluses, ex. club de spéléo ou FFS) : **KarstPro n'embarque
+  aucune clé**, chaque utilisateur fournit la sienne. Laissé vide (cas par
+  défaut), aucun effet — la préparation fonctionne normalement.
 
 ### Corrigé
 - **« Préparer une sortie » pouvait perdre des verdicts terrain non
