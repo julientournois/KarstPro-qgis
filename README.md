@@ -24,6 +24,8 @@ QField prêt pour le terrain et un rapport structuré.
 
 > 📖 **[Documentation complète illustrée (PDF) →](KarstPro_Documentation.pdf)**
 > Guide pas à pas du bureau au terrain, référence des paramètres, scoring, export.
+> Pour la rigueur scientifique complète du scoring (validation, AUC, seuils) :
+> voir `DOC_TECHNIQUE_DETECTION.md`, fourni dans cette même archive.
 
 ---
 

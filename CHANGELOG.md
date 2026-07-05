@@ -3,6 +3,39 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.5.1] — 2026-07-05
+
+### Modifié
+- **Documentation restructurée par public.** La section « Scoring des dolines »
+  du README (validation AUC, anatomie du modèle appris, barème détaillé
+  composante par composante, historique des révisions v2) faisait ~600 lignes
+  d'un README de 1346 — dupliquée avec `docs/DOC_TECHNIQUE_DETECTION.md` et
+  illisible pour un non-initié. Le README garde désormais l'essentiel opérationnel
+  (comment utiliser l'outil, ce que veut dire chaque couleur/paramètre) ; le
+  détail scientifique complet vit uniquement dans `DOC_TECHNIQUE_DETECTION.md`,
+  **désormais fourni dans l'archive livrée** (annexe optionnelle, à côté du PDF)
+  au lieu de rester dev-only.
+- **Correctif** : un tableau markdown du README (contenu du GeoPackage) était
+  coupé en deux par un encart inséré au milieu, cassant son rendu (deuxième
+  moitié sans ligne d'en-tête). Réparé.
+- Description du filtre canopée sur les gouffres dédupliquée (elle apparaissait
+  deux fois, texte quasi identique).
+- **`DOC_TECHNIQUE_DETECTION.md` revérifié contre le code actuel** (annexe
+  désormais distribuée, donc engageante) : numéro de version ajouté en tête ;
+  table des coefficients du modèle Barrois corrigée (valeurs obsolètes —
+  `ratio_ps` notamment était donné à 0,627, la valeur réelle du modèle livré
+  est 0,517 ; 8 variables et non 9) ; seuils de probabilité P1/P2/P3 corrigés
+  en conséquence ; une piste testée manquante (ré-entraînement BaseKarst52,
+  sans gain hors-domaine) ajoutée à la liste honnête des échecs.
+
+### Note connue (non corrigée ici)
+- `karstpro/models/jura_plateau_model.json` référence encore `cold_air_index`
+  comme variable active (coefficient −0,167) alors que cette colonne n'est plus
+  calculée nulle part dans le code : elle est donc imputée à sa médiane pour
+  **chaque** doline, un poids mort qui ne discrimine rien (le modèle reste
+  fonctionnel, juste sous-optimal). Nécessite un ré-entraînement du modèle
+  Jura plateau, hors scope d'une revue de documentation.
+
 ## [1.5.0] — 2026-07-05
 
 ### Ajouté
