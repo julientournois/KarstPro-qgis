@@ -1,6 +1,6 @@
 # KarstPro — Document technique : critères, seuils, outils, modèles
 
-**Version : 1.5.1**
+**Version : 1.6.0**
 
 > Annexe optionnelle au guide d'utilisation (`KarstPro_Documentation.pdf`,
 > fourni à côté de ce fichier) : le détail complet de
@@ -329,17 +329,90 @@ selon trois critères, sans jamais appliquer un modèle hors de son domaine :
 | Modèle | Domaine | AUC | Application |
 |---|---|---|---|
 | **Barrois** | Meuse / Haute-Marne (karst sous couverture) | 0,65–0,72 hors-échantillon | **automatique** |
-| **Jura plateau** | Doubs / Jura (karst nu à gouffres) | 0,656 LOCO (4 communes) | **opt-in** (manuel) |
+| **Jura plateau** | Doubs / Jura (karst nu à gouffres) | 0,633 LOCO (5 communes) | **opt-in** (manuel) |
+| **Lot** | Causses du Quercy | 0,602 LOCO (8 communes) | **opt-in** (manuel) |
+| **Dordogne** | Périgord noir | 0,629 LOCO (8 communes) | **opt-in** (manuel) |
+| **Ardèche** | Gorges de l'Ardèche / Bas-Vivarais | 0,638 LOCO (8 communes) | **opt-in** (manuel) |
 
 > Le Jura plateau est en **opt-in** par honnêteté : un plateau et une
 > vallée/reculée jurassiens ont la **même lithologie** ; aucun descripteur du MNT
 > ne sépare de façon fiable les deux régimes (les dolines ont des formes
 > identiques). La machine ne prétend donc pas savoir où le modèle est valide —
 > c'est le spéléologue qui l'active, sur son jugement géologique.
+>
+> Les trois modèles Lot/Dordogne/Ardèche sont **opt-in** pour une autre raison :
+> le BD Charm-50 (lithologie fine, colonne `NOTATION`) n'est mis en cache que
+> pour la Bourgogne-Franche-Comté et le Grand-Est. Hors de ce cache, KarstPro
+> retombe sur le WFS BRGM `LITHO_1M` (1/1 000 000, un seul polygone générique
+> par commune, sans colonne `NOTATION`) — trop grossier pour construire une
+> signature lithologique (`domain_notations` vide). Ces modèles ne peuvent donc
+> pas être suggérés automatiquement par lithologie ; seule la distance
+> géographique (et le veto à 120 km) s'applique en repli, ou l'activation
+> manuelle par l'utilisateur.
 
 ---
 
-## 6. Cavités connues — rattachement `cavite_connue_proche`
+## 6. Diagnostic empirique de domaine — outil « Diagnostiquer un modèle »
+
+Le routeur (§5) sait sélectionner un modèle **automatique** pour une zone déjà
+validée, mais ne peut jamais dire, pour une commune **jamais vue**, si un
+modèle opt-in (Jura plateau, Lot, Dordogne, Ardèche…) s'y appliquerait — ce
+serait deviner le régime géologique à l'avance, **prouvé impossible** depuis
+le relief seul (concept drift, cf. `docs/JOURNAL_EXPERIENCES.md` — 7 pistes
+testées, 7 échecs).
+
+**Ce qui change la donne : un inventaire même partiel.** Dès qu'une commune
+cible a **quelques cavités déjà connues** (BRGM Géorisques, toujours
+disponible, et/ou un inventaire utilisateur), la question n'est plus
+« deviner » mais **mesurer** : `core/domain_diagnostic.py::diagnose_models`
+applique chaque modèle disponible aux dolines déjà détectées, labellise
+chaque doline (1 si une cavité connue est à ≤ `label_radius_m` du centroïde,
+0 sinon — rayon **propre à chaque modèle**, pas un rayon global, pour rester
+cohérent avec sa calibration d'entraînement), puis calcule l'AUC réel entre
+ce label et la probabilité prédite par le modèle (`model_score.predict_proba`).
+
+**AUC en numpy pur, jamais sklearn.** Comme l'inférence elle-même
+(`core/model_score.py`), l'AUC est calculée par la statistique de
+Mann-Whitney (rangs moyens en cas d'égalité), pas par
+`sklearn.metrics.roc_auc_score` — le plugin distribué n'embarque ni sklearn
+ni joblib. Une première version de l'outil violait cette règle par erreur
+(import `sklearn` oublié) ; le bug a été trouvé et corrigé en 2026-07 grâce à
+un test réel en QGIS, dont l'environnement Python n'a pas sklearn installé
+contrairement à un environnement de développement.
+
+**Validation de la méthode elle-même** (session 2026-07-06,
+`prototypes/diagnose_domain.py`) : sur les 7 communes du Jura déjà étudiées,
+l'AUC mesuré par ce diagnostic (modèle entraîné sur les 6 *autres* communes,
+jamais la cible) tombe à **≤ 0,013 du LOCO complet** — dont 2 communes à
+l'écart exact de 0,000. Le diagnostic reproduit donc fidèlement ce que donnerait
+une vraie validation croisée, appliqué à une seule commune cible plutôt qu'à
+tout un jeu d'entraînement.
+
+**Interprétation du résultat** (seuils de `format_diagnostic_report`) :
+AUC ≥ 0,60 → « s'applique bien » ; 0,55–0,60 → « s'applique faiblement » ;
+< 0,55 → « ne s'applique pas ». En dessous de `MIN_CAVITES` cavités appariées
+(défaut 10), l'AUC est quand même calculé mais signalé comme peu fiable.
+
+> ⚠️ **Ne pas suivre la recommandation « meilleur modèle » les yeux fermés.**
+> Un audit croisé (2026-07-07, `prototypes/diagnose_all_communes.py`) sur les
+> 35 communes déjà préparées montre que le modèle du domicile géographique
+> n'est le mieux classé que dans **46 % des cas** (rang moyen 1,83/5, contre
+> 3,0 au hasard — un vrai signal existe, mais plus faible que la spécialisation
+> régionale supposée par le routage lithologie/distance). Les 5 modèles
+> partagent les mêmes 8 features morphométriques (une seule,
+> `comp_geologie_dist_m`, touche vraiment la lithologie) : ils captent surtout
+> « à quoi ressemble une doline plausible », pas une signature régionale
+> forte. Le diagnostic mesure honnêtement l'AUC de chaque modèle disponible —
+> à toi de juger si l'écart avec le modèle recommandé justifie de changer.
+
+**Read-only.** Aucune couche n'est modifiée, aucun modèle n'est activé
+automatiquement — le choix reste dans le menu « Priorisation » de
+« Préparer une sortie », ou via « Forcer un modèle différent » (§ suivante
+implicitement liée, voir le README pour l'usage pas à pas).
+
+---
+
+## 7. Cavités connues — rattachement `cavite_connue_proche`
 
 Chaque doline reçoit un flag de proximité à une cavité déjà répertoriée (couche
 utilisateur `cavites_connues` et/ou cavités BRGM Géorisques téléchargées
@@ -377,7 +450,7 @@ jugement de terrain, pas une règle géométrique fiable à automatiser.
 
 ---
 
-## 7. Données injectées dans l'export MLL — quoi et d'où
+## 8. Données injectées dans l'export MLL — quoi et d'où
 
 L'export MLL (« Modèle de Langage ») produit **un fichier texte unique** (le
 *prompt*) destiné à une analyse par IA. Il n'envoie **jamais** de données brutes
@@ -433,7 +506,7 @@ prompt est une **synthèse géoréférencée**, pas un dépôt de données.
 
 ---
 
-## 8. Synthèse — limites assumées
+## 9. Synthèse — limites assumées
 
 - La détection trouve des **formes**, pas des cavités : la vérification terrain
   reste indispensable.

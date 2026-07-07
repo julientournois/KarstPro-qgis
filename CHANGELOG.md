@@ -3,6 +3,81 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.6.0] — 2026-07-08
+
+### Ajouté
+- **Nouvel outil « Diagnostiquer un modèle ».** Applique chaque modèle appris
+  disponible (Barrois, Jura plateau…) aux dolines déjà détectées d'une
+  commune et mesure l'AUC réel contre un inventaire de cavités connues
+  fourni par l'utilisateur — même partiel. Ne prédit rien (deviner le
+  régime géologique sans cavités connues est impossible, cf.
+  `docs/JOURNAL_EXPERIENCES.md`) : vérifie empiriquement si un modèle
+  s'applique, sans jamais l'activer automatiquement (le choix reste dans
+  le menu « Priorisation »). Read-only, aucune couche modifiée. La couche
+  `cavites_georisques` (BRGM, publique, déjà téléchargée à la préparation)
+  est utilisée automatiquement en complément de l'inventaire fourni, ou
+  seule si aucun inventaire personnel n'est donné — permet de tester un
+  modèle même sans inventaire privé.
+- **« Refaire une étude » : nouveau paramètre avancé « Forcer un modèle
+  différent ».** Permet de re-scorer une étude déjà préparée avec un autre
+  modèle que celui utilisé à l'origine (utile si un modèle plus récent ou
+  mieux adapté est disponible). Les dolines détectées ne changent pas ;
+  seule leur priorité (couleur) peut changer, uniquement pour celles jamais
+  visitées — les verdicts terrain déjà saisis sont protégés (report par
+  position, jamais par référence au score). Le journal indique combien de
+  dolines changent de palier de priorité.
+- **Trois nouveaux modèles régionaux opt-in : Lot (Causses du Quercy),
+  Dordogne (Périgord noir), Ardèche (Gorges de l'Ardèche / Bas-Vivarais).**
+  Entraînés en LOCO sur 8 communes chacun, à partir des cavités BRGM
+  Géorisques (données publiques). AUC hors-échantillon honnêtes : Ardèche
+  0,638, Dordogne 0,629, Lot 0,602 (aucune commune exclue — voir la leçon
+  méthodologique dans `docs/JOURNAL_EXPERIENCES.md` sur pourquoi deux
+  exclusions initiales injustifiées ont été annulées). Activables via
+  « Forcer un modèle différent » (voir ci-dessus) ou directement à la
+  préparation ; jamais sélectionnés automatiquement, faute de lithologie
+  fine (BD Charm-50) disponible sur ces départements.
+
+### Corrigé
+- **« Diagnostiquer un modèle » plantait à l'usage réel (dépendance sklearn
+  manquante).** Le calcul d'AUC importait `sklearn.metrics.roc_auc_score` au
+  runtime, alors que le plugin distribué n'embarque ni sklearn ni joblib
+  (convention documentée dans `core/model_score.py`) — trouvé au premier vrai
+  clic dans QGIS (smoke test headless), aurait échoué avec
+  `ModuleNotFoundError` chez l'utilisateur. Remplacé par un calcul d'AUC en
+  numpy pur (statistique de Mann-Whitney, rangs moyens), vérifié identique.
+- **README : estimation du temps de préparation corrigée (était fausse pour
+  les grandes zones).** « 5–20 min selon la surface » sous-estimait largement
+  les grandes emprises : mesuré sur 31 préparations réelles de cette session,
+  Poligny (151 km²) a pris 103 min, Gramat (121 km²) 92 min. Remplacé par une
+  estimation basée sur ces mesures (~35–37 s/km², dominé par le
+  téléchargement LiDAR) ; ajouté aussi le temps réel de « Refaire une étude »
+  avec cache (1–2 min, indépendant de la surface).
+- **« Refaire une étude » + modèle forcé : le résumé de changement de palier
+  ne s'affichait jamais, en silence.** Le code cherchait une colonne `name`
+  sur la couche `dolines` pour suivre chaque doline avant/après — cette
+  colonne n'existe que sur les couches cibles P1/P2/P3 exportées, jamais sur
+  `dolines` elle-même. Trouvé lors du premier test réel (modèle forcé sur
+  Marnaval) : la comparaison restait vide sans aucune erreur ni
+  avertissement. Corrigé en utilisant l'identifiant de ligne réel
+  (`__fid__`) ; la logique de capture est désormais extraite dans
+  `core/etude.py::capture_priorites()` (testée unitairement, y compris sur
+  le schéma réel sans colonne `name`) plutôt que dupliquée en ligne dans
+  l'algorithme.
+- **Modèle « Jura plateau » ré-entraîné : la variable morte est retirée.**
+  `jura_plateau_model.json` référençait encore `cold_air_index` (signalé en
+  v1.5.1), une colonne qui n'est plus jamais calculée par le plugin —
+  imputée à sa médiane pour chaque doline, un poids mort qui ne
+  discriminait rien. Ré-entraîné sur 5 communes du plateau jurassien
+  (Besain, Molain, Arc-sous-Cicon, Poligny, Chaux-Neuve) avec les
+  features actuelles. AUC hors-échantillon (LOCO) : **0,633** (contre
+  0,656 documenté avec l'ancienne variable, chiffres non directement
+  comparables — l'ancienne colonne ne peut plus être recalculée pour
+  refaire le test à l'identique). Deux communes candidates testées et
+  écartées faute de signal (Saint-Maurice-Crillat 0,53 / La Châtelaine
+  0,54, quasi hasard malgré un inventaire pur en gouffres) — confirme
+  que la lithologie/densité ne suffit pas à distinguer plateau et vallée.
+  Modèle toujours **opt-in**, jamais appliqué automatiquement.
+
 ## [1.5.1] — 2026-07-05
 
 ### Modifié
