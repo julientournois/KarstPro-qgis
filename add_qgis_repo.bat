@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-rem Enregistre le depot custom Karst Entry dans QGIS (mises a jour automatiques).
+rem Enregistre le depot custom KarstPro dans QGIS (mises a jour automatiques).
 rem Fermer QGIS avant de lancer ce script (sinon il ecrase la modification a sa fermeture).
 
 set SCRIPT=%~dp0add_qgis_repo.py

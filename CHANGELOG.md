@@ -77,6 +77,13 @@ versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<versio
   0,54, quasi hasard malgré un inventaire pur en gouffres) — confirme
   que la lithologie/densité ne suffit pas à distinguer plateau et vallée.
   Modèle toujours **opt-in**, jamais appliqué automatiquement.
+- **Dépôt QGIS custom** (mises à jour automatiques, sans passer par le dépôt
+  officiel — licence PolyForm Noncommercial incompatible GPL) : manifeste
+  `plugins.xml` (`generate_plugins_xml.py`) hébergé sur GitHub Pages du dépôt
+  de distribution (`https://julientournois.github.io/KarstPro-qgis/plugins.xml`).
+- **`add_qgis_repo.bat`/`.sh`/`.py`** : enregistre automatiquement ce dépôt
+  dans QGIS (tous profils détectés, QGIS 3 et 4, Windows/Linux/macOS) — plus
+  besoin de le faire à la main dans Extensions → Paramètres → Dépôts.
 
 ## [1.5.1] — 2026-07-05
 
