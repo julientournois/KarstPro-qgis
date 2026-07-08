@@ -3,6 +3,19 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.6.1] — 2026-07-08
+
+### Corrigé
+- **Dépôt QGIS custom : installation impossible depuis le dépôt** (« Could not
+  store plugin to the plugin directory ») et logo absent dans le panneau de
+  détails. Deux bugs de configuration du manifeste `plugins.xml`, trouvés en
+  lisant le code source de QGIS : `download_url`/`file_name` pointaient vers
+  le zip de distribution complet (installeurs, doc, PDF) au lieu du plugin
+  seul — QGIS n'y trouvait aucun plugin valide à la racine ; `icon` était un
+  nom de fichier relatif au lieu d'une URL absolue, donnant une image cassée.
+  Corrigés et vérifiés de bout en bout (téléchargement + inspection du zip
+  servi, URL de l'icône).
+
 ## [1.6.0] — 2026-07-08
 
 ### Ajouté
