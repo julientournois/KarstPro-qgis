@@ -3,6 +3,12 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.6.2] — 2026-07-08
+
+Aucun changement fonctionnel du plugin — bump de version dédié à tester le
+mécanisme de mise à jour automatique du dépôt QGIS custom de bout en bout
+(installation réelle via QGIS, pas un déploiement manuel des fichiers).
+
 ## [1.6.1] — 2026-07-08
 
 ### Corrigé

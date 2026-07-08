@@ -1,22 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.6.1">
+    <pyqgis_plugin name="KarstPro" version="1.6.2">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
-        <changelog><![CDATA[Corrigé :
-- Dépôt QGIS custom : installation impossible depuis le dépôt (« Could not
-  store plugin to the plugin directory ») et logo absent dans le panneau de
-  détails. Deux bugs de configuration du manifeste `plugins.xml`, trouvés en
-  lisant le code source de QGIS : `download_url`/`file_name` pointaient vers
-  le zip de distribution complet (installeurs, doc, PDF) au lieu du plugin
-  seul — QGIS n'y trouvait aucun plugin valide à la racine ; `icon` était un
-  nom de fichier relatif au lieu d'une URL absolue, donnant une image cassée.
-  Corrigés et vérifiés de bout en bout (téléchargement + inspection du zip
-  servi, URL de l'icône).]]></changelog>
-        <create_date>2026-07-08T19:30:50.345184+00:00</create_date>
+        <changelog><![CDATA[Aucun changement fonctionnel du plugin — bump de version dédié à tester le
+mécanisme de mise à jour automatique du dépôt QGIS custom de bout en bout
+(installation réelle via QGIS, pas un déploiement manuel des fichiers).]]></changelog>
+        <create_date>2026-07-08T19:46:58.444599+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.6.1/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.6.2/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -27,8 +20,8 @@
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-07-08T19:30:50.345184+00:00</update_date>
+        <update_date>2026-07-08T19:46:58.444599+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.6.1</version>
+        <version>1.6.2</version>
     </pyqgis_plugin>
 </plugins>
