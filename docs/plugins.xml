@@ -82,12 +82,12 @@ Corrigé :
 - `add_qgis_repo.bat`/`.sh`/`.py` : enregistre automatiquement ce dépôt
   dans QGIS (tous profils détectés, QGIS 3 et 4, Windows/Linux/macOS) — plus
   besoin de le faire à la main dans Extensions → Paramètres → Dépôts.]]></changelog>
-        <create_date>2026-07-08T10:09:26.268910+00:00</create_date>
+        <create_date>2026-07-08T19:01:30.820113+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.6.0/KarstPro_v1.6.0_2026-07-08.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.6.0/karstpro.zip</download_url>
         <experimental>False</experimental>
-        <file_name>KarstPro_v1.6.0_2026-07-08.zip</file_name>
+        <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
         <icon>icon.png</icon>
         <repository><![CDATA[https://github.com/julientournois/KarstPro-qgis]]></repository>
@@ -96,7 +96,7 @@ Corrigé :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-07-08T10:09:26.268910+00:00</update_date>
+        <update_date>2026-07-08T19:01:30.820113+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
         <version>1.6.0</version>
     </pyqgis_plugin>
