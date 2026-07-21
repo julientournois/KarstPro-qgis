@@ -3,6 +3,67 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.7.0] — 2026-07-12
+
+### Ajouté
+- **SCAN25 coché par défaut si une clé est fournie, Plan IGN décoché en
+  correspondance.** Auparavant SCAN25 était toujours décoché (même avec une
+  clé valide) et le Plan IGN gratuit restait actif — celui qui renseigne sa
+  clé personnelle (produit payant) veut la voir sans clic supplémentaire.
+  Sans clé : comportement inchangé (SCAN25 non créé, Plan IGN visible).
+- **Installation automatique des dépendances Python (avec confirmation).**
+  Un plugin installé depuis un dépôt QGIS (custom ou officiel) n'exécute
+  jamais de script post-install — seul le zip est extrait (vérifié dans le
+  code source de `pyplugin_installer`). geopandas, rasterio, reportlab,
+  whitebox, pyproj peuvent donc manquer même si l'import du plugin réussit
+  (imports lourds différés dans les algorithmes). `classFactory()` détecte
+  maintenant proactivement les dépendances manquantes au chargement et
+  propose une boîte de dialogue Oui/Non pour les installer (jamais
+  d'installation silencieuse) ; en cas de refus ou d'échec, un plugin stub
+  minimal évite tout traceback brut dans le gestionnaire d'extensions.
+  Compatible PyQt5 (QGIS 3.x, testé en conditions réelles sur QGIS 3.40.4
+  avec PyQt5 5.15.11) et PyQt6 (toute la branche QGIS 4.x, testé sur
+  4.0.2 et 4.2.0) — smoke test headless complet (6 algorithmes) vert sur
+  les trois versions.
+- **« Refaire une étude » : nouveau paramètre avancé « Clé API SCAN25 ».**
+  Jusqu'ici la clé SCAN25 n'était jamais rejouable — impossible d'ajouter la
+  carte IGN 1/25 000 après coup sans repartir de « Préparer une sortie » et
+  ressaisir tout depuis zéro. Renseigner ce paramètre l'ajoute (ou la
+  remplace) dans le projet régénéré ; laissé vide, le réglage d'origine
+  (clé ou absence de clé) est préservé à l'identique.
+
+### Corrigé
+- **`SCAN25_APIKEY` n'était jamais écrite dans `karstpro_etude.json`**
+  (trouvé par revue de code sur la fonctionnalité ci-dessus, avant toute
+  publication — jamais parti en release). `PREP_PARAM_KEYS`
+  (`core/etude.py`), la liste blanche utilisée pour persister les
+  paramètres d'une préparation, n'incluait pas cette clé : elle était
+  silencieusement perdue, rendant la promesse « laisser vide = garder le
+  réglage d'origine » ci-dessus fausse dans les faits. Corrigé (clé
+  ajoutée à la liste) ; le filet de repli pour les anciennes études sans
+  JSON (`parse_prep_log`, sur le dernier log de préparation) avait aussi
+  une regex qui ne matchait pas les chiffres et aurait échoué à relire
+  `SCAN25_APIKEY` — corrigée également. Garde-fou ajouté :
+  `test_prep_param_keys_covers_every_karst_prep_parameter` compare
+  statiquement les paramètres déclarés dans `karst_prep_algorithm.py` à
+  `PREP_PARAM_KEYS`, pour empêcher qu'un futur paramètre soit de nouveau
+  oublié en silence.
+- **La couche SCAN25 ne s'affichait jamais, même avec une clé API valide**
+  (trouvé par test réel sur le terrain, Marnaval). L'endpoint WMS utilisé
+  (`private/wms-r`, layer `SCAN25TOUR_PYR-JPEG_WLD_WM`) était silencieusement
+  mort : QGIS déclarait la couche valide (`isValid() == True`) mais chaque
+  tuile renvoyée était entièrement vide — confirmé en conditions réelles
+  (0 octet non-nul sur 262144 récupérés). `isValid()` ne suffit donc pas à
+  garantir qu'une couche WMS/WMTS fonctionne. Remplacé par l'endpoint WMTS
+  (`private/wmts`, layer `GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN25TOUR`), repris
+  à l'identique d'un projet manuel confirmé fonctionnel — vérifié qu'il
+  renvoie bien une vraie image (261891/262144 octets non-nuls sur la même
+  zone). Au passage, la query string imbriquée dans le paramètre `url=`
+  (SERVICE/VERSION/REQUEST/apikey) doit être percent-encodée dans son
+  ensemble dès qu'elle a plusieurs clés — contrairement à l'ancien endpoint
+  WMS à un seul paramètre, où les caractères `?`/`=` littéraux ne posaient
+  pas ce problème d'ambiguïté avec les clés du `wms:` externe.
+
 ## [1.6.2] — 2026-07-08
 
 Aucun changement fonctionnel du plugin — bump de version dédié à tester le
