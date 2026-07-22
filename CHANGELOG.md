@@ -3,6 +3,27 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.7.1] — 2026-07-21
+
+### Ajouté
+- **Installeur Windows autonome (`KarstPro_Setup_v<version>.exe`, Inno
+  Setup).** Assistant graphique en une passe : détecte les profils QGIS
+  installés (checklist si plusieurs), propose d'installer les dépendances
+  Python et d'enregistrer le dépôt QGIS custom, avec un vrai désinstalleur
+  (Panneau de configuration). Autonome — n'exécute jamais `install_windows.bat`
+  ni aucun fichier externe : le plugin, le script de dépendances et celui du
+  dépôt sont tous embarqués comme ressources dans le `.exe` et extraits en
+  temporaire à l'exécution. Reprend le logo KarstPro (icône de l'exe, page
+  de bienvenue de l'assistant, icône dans Programmes et fonctionnalités) et
+  un texte de bienvenue décrivant ce que fait le plugin. Généré
+  automatiquement par `build_release.ps1` (nécessite Inno Setup, `winget
+  install JRSoftware.InnoSetup` — best-effort, les autres livrables ne
+  dépendent pas de sa présence). Distribué en asset séparé sur la Release
+  GitHub, pas inclus dans l'archive ZIP existante.
+- Doc d'installation Windows réécrite autour de cet installeur (méthode
+  recommandée, captures d'écran réelles de l'assistant), l'ancienne méthode
+  zip+bat reste documentée pour Linux et en dépannage.
+
 ## [1.7.0] — 2026-07-12
 
 ### Ajouté

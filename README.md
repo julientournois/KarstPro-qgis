@@ -62,10 +62,21 @@ QField prêt pour le terrain et un rapport structuré.
 
 ## ⚙️ Installation
 
-> **Prérequis** — [QGIS](https://qgis.org) ≥ 3.34 LTR (testé sur 3.40 et 4.0.2).
-> Une connexion internet est requise au premier lancement.
+> **Prérequis** — [QGIS](https://qgis.org) ≥ 3.34 LTR (testé sur 3.40, 4.0.2 et
+> 4.2.0). Une connexion internet est requise au premier lancement.
 
-### Méthode rapide (recommandée)
+### Windows (recommandée)
+
+Télécharger `KarstPro_Setup_v<version>.exe` depuis la
+**[page des Releases](https://github.com/julientournois/KarstPro-qgis/releases)**
+et double-cliquer dessus. Un seul assistant détecte les profils QGIS,
+installe le plugin et ses dépendances Python, et propose d'enregistrer le
+dépôt de mises à jour automatiques — sans dépendre d'aucun fichier externe.
+Windows peut afficher un avertissement SmartScreen (éditeur non reconnu,
+l'installeur n'est pas signé) : cliquer sur *Informations complémentaires →
+Exécuter quand même*.
+
+### Linux, ou méthode alternative (archive ZIP)
 
 1. **Télécharger** ce dépôt (bouton **Code → Download ZIP**) et le décompresser.
 2. Lancer le script d'installation :

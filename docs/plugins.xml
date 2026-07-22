@@ -1,70 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.7.0">
+    <pyqgis_plugin name="KarstPro" version="1.7.1">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
         <changelog><![CDATA[Ajouté :
-- SCAN25 coché par défaut si une clé est fournie, Plan IGN décoché en
-  correspondance. Auparavant SCAN25 était toujours décoché (même avec une
-  clé valide) et le Plan IGN gratuit restait actif — celui qui renseigne sa
-  clé personnelle (produit payant) veut la voir sans clic supplémentaire.
-  Sans clé : comportement inchangé (SCAN25 non créé, Plan IGN visible).
-- Installation automatique des dépendances Python (avec confirmation).
-  Un plugin installé depuis un dépôt QGIS (custom ou officiel) n'exécute
-  jamais de script post-install — seul le zip est extrait (vérifié dans le
-  code source de `pyplugin_installer`). geopandas, rasterio, reportlab,
-  whitebox, pyproj peuvent donc manquer même si l'import du plugin réussit
-  (imports lourds différés dans les algorithmes). `classFactory()` détecte
-  maintenant proactivement les dépendances manquantes au chargement et
-  propose une boîte de dialogue Oui/Non pour les installer (jamais
-  d'installation silencieuse) ; en cas de refus ou d'échec, un plugin stub
-  minimal évite tout traceback brut dans le gestionnaire d'extensions.
-  Compatible PyQt5 (QGIS 3.x, testé en conditions réelles sur QGIS 3.40.4
-  avec PyQt5 5.15.11) et PyQt6 (toute la branche QGIS 4.x, testé sur
-  4.0.2 et 4.2.0) — smoke test headless complet (6 algorithmes) vert sur
-  les trois versions.
-- « Refaire une étude » : nouveau paramètre avancé « Clé API SCAN25 ».
-  Jusqu'ici la clé SCAN25 n'était jamais rejouable — impossible d'ajouter la
-  carte IGN 1/25 000 après coup sans repartir de « Préparer une sortie » et
-  ressaisir tout depuis zéro. Renseigner ce paramètre l'ajoute (ou la
-  remplace) dans le projet régénéré ; laissé vide, le réglage d'origine
-  (clé ou absence de clé) est préservé à l'identique.
-
-Corrigé :
-- `SCAN25_APIKEY` n'était jamais écrite dans `karstpro_etude.json`
-  (trouvé par revue de code sur la fonctionnalité ci-dessus, avant toute
-  publication — jamais parti en release). `PREP_PARAM_KEYS`
-  (`core/etude.py`), la liste blanche utilisée pour persister les
-  paramètres d'une préparation, n'incluait pas cette clé : elle était
-  silencieusement perdue, rendant la promesse « laisser vide = garder le
-  réglage d'origine » ci-dessus fausse dans les faits. Corrigé (clé
-  ajoutée à la liste) ; le filet de repli pour les anciennes études sans
-  JSON (`parse_prep_log`, sur le dernier log de préparation) avait aussi
-  une regex qui ne matchait pas les chiffres et aurait échoué à relire
-  `SCAN25_APIKEY` — corrigée également. Garde-fou ajouté :
-  `test_prep_param_keys_covers_every_karst_prep_parameter` compare
-  statiquement les paramètres déclarés dans `karst_prep_algorithm.py` à
-  `PREP_PARAM_KEYS`, pour empêcher qu'un futur paramètre soit de nouveau
-  oublié en silence.
-- La couche SCAN25 ne s'affichait jamais, même avec une clé API valide
-  (trouvé par test réel sur le terrain, Marnaval). L'endpoint WMS utilisé
-  (`private/wms-r`, layer `SCAN25TOUR_PYR-JPEG_WLD_WM`) était silencieusement
-  mort : QGIS déclarait la couche valide (`isValid() == True`) mais chaque
-  tuile renvoyée était entièrement vide — confirmé en conditions réelles
-  (0 octet non-nul sur 262144 récupérés). `isValid()` ne suffit donc pas à
-  garantir qu'une couche WMS/WMTS fonctionne. Remplacé par l'endpoint WMTS
-  (`private/wmts`, layer `GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN25TOUR`), repris
-  à l'identique d'un projet manuel confirmé fonctionnel — vérifié qu'il
-  renvoie bien une vraie image (261891/262144 octets non-nuls sur la même
-  zone). Au passage, la query string imbriquée dans le paramètre `url=`
-  (SERVICE/VERSION/REQUEST/apikey) doit être percent-encodée dans son
-  ensemble dès qu'elle a plusieurs clés — contrairement à l'ancien endpoint
-  WMS à un seul paramètre, où les caractères `?`/`=` littéraux ne posaient
-  pas ce problème d'ambiguïté avec les clés du `wms:` externe.]]></changelog>
-        <create_date>2026-07-21T18:01:42.538611+00:00</create_date>
+- Installeur Windows autonome (`KarstPro_Setup_v<version>.exe`, Inno
+  Setup). Assistant graphique en une passe : détecte les profils QGIS
+  installés (checklist si plusieurs), propose d'installer les dépendances
+  Python et d'enregistrer le dépôt QGIS custom, avec un vrai désinstalleur
+  (Panneau de configuration). Autonome — n'exécute jamais `install_windows.bat`
+  ni aucun fichier externe : le plugin, le script de dépendances et celui du
+  dépôt sont tous embarqués comme ressources dans le `.exe` et extraits en
+  temporaire à l'exécution. Reprend le logo KarstPro (icône de l'exe, page
+  de bienvenue de l'assistant, icône dans Programmes et fonctionnalités) et
+  un texte de bienvenue décrivant ce que fait le plugin. Généré
+  automatiquement par `build_release.ps1` (nécessite Inno Setup, `winget
+  install JRSoftware.InnoSetup` — best-effort, les autres livrables ne
+  dépendent pas de sa présence). Distribué en asset séparé sur la Release
+  GitHub, pas inclus dans l'archive ZIP existante.
+- Doc d'installation Windows réécrite autour de cet installeur (méthode
+  recommandée, captures d'écran réelles de l'assistant), l'ancienne méthode
+  zip+bat reste documentée pour Linux et en dépannage.]]></changelog>
+        <create_date>2026-07-22T19:41:03.631097+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.7.0/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.7.1/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -75,8 +35,8 @@ Corrigé :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-07-21T18:01:42.538611+00:00</update_date>
+        <update_date>2026-07-22T19:41:03.631097+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.7.0</version>
+        <version>1.7.1</version>
     </pyqgis_plugin>
 </plugins>
