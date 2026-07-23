@@ -3,6 +3,94 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.9.0] — 2026-07-23
+
+### Modifié
+- **Export MLL : JSON séparé du prompt texte, GPX embarqué (pas
+  reconstruit).** Le `.txt` mêlait prose et dump JSON brut dans un seul
+  fichier de 400k+ caractères, illisible à l'œil humain. Le JSON est
+  désormais écrit à part (`mll_data_<secteur>_<date>.json`, à joindre au
+  même message MLL) — le `.txt` ne contient plus que le prompt narratif
+  (contexte, règles, mission, tableaux), ~148k caractères sur Marnaval
+  contre ~410k avant. Le GPX pré-généré (coordonnées exactes, script) est
+  désormais embarqué tel quel dans la mission (§5) : le LLM n'a plus à
+  reconstruire un GPX en recopiant lat/lon à la main depuis le JSON pour
+  des dizaines de cibles (risque réel de transcription) — il doit
+  seulement réordonner les `<wpt>` déjà corrects selon l'ordre de visite
+  optimal, sans jamais toucher aux coordonnées. Vérifié sur l'export réel
+  Marnaval : JSON valide (373 entrées), GPX embarqué avec de vraies
+  coordonnées WGS84 (pas de placeholders).
+
+### Corrigé
+- **Deux incohérences internes au prompt MLL, trouvées en relecture
+  systématique.** (1) La section « Règles d'analyse » affirmait que les
+  dolines grises figuraient dans le JSON brut — faux, le rapport lui-même
+  dit juste avant qu'elles en sont exclues (hors seuil) ; le LLM recevait
+  une instruction contredisant les données sous ses yeux. Corrigé : les
+  grises sont maintenant explicitement décrites comme absentes de tout le
+  rapport (ni tableaux, ni JSON). (2) L'étape « Analyse structurale »
+  demandait de juger la cohérence avec « la trace du contact géologique »
+  sans jamais dire que ce tracé n'existe QUE dans l'image jointe (aucune
+  géométrie de contact n'est fournie en texte/JSON, seul un azimut de
+  pendage l'est) — un LLM texte-only ne pouvait littéralement pas répondre,
+  et un LLM vision ne savait pas qu'il devait regarder l'image pour ça.
+  Corrigé : renvoi explicite et conditionnel vers l'image (ou mention de
+  son absence si aucune carte n'a pu être générée).
+
+### Ajouté
+- **Carte de contexte MLL : échelle + flèche du nord + consigne
+  anti-hallucination.** Sans repère métrique ni orientation, un LLM vision
+  ne pouvait juger distances/alignements qu'en devinant depuis les pixels.
+  Ajout d'une barre d'échelle (longueur arrondie 1/2/5×10ⁿ) et d'une flèche
+  du nord (canvas jamais tourné → fiable à 100 %), dessinées au QPainter.
+  Le prompt interdit désormais explicitement toute coordonnée/distance
+  déduite de l'image (les tableaux/JSON restent l'unique source de vérité
+  chiffrée) — l'image sert uniquement à l'appréciation qualitative
+  (alignements, orientation, répartition spatiale).
+- **Carte de contexte MLL : seules les cibles rouges/oranges tracées.** La
+  carte traçait les 4 priorités (rouge/orange/jaune/gris) — sur Marnaval,
+  les grises (68 % du total, 2191/3199) et les jaunes sont entièrement
+  exclues du JSON détaillé du prompt (cf. `P2P3_CAP`) : les tracer
+  n'ajoutait aucune information exploitable par le LLM tout en noyant le
+  hillshade sous des centaines de points. La carte se limite désormais à
+  rouge/orange — exactement le périmètre déjà utilisé pour le clustering
+  structural (`cibles_top`) et détaillé dans les tableaux/JSON. L'emprise
+  de la carte reste calculée sur toutes les dolines (contexte visuel complet
+  du secteur), seul le tracé des points est restreint.
+- **Carte de contexte MLL : réseau karstique connu + géologie BRGM + relief
+  exagéré + légende intégrée.** La carte (`carte_<secteur>_<date>.png`)
+  affichait déjà le hillshade + les dolines par priorité ; elle affiche
+  désormais aussi le réseau topographié (`topo_reseau`, trait bleu foncé) et
+  les formations géologiques BRGM en semi-transparence, drapées sur le
+  hillshade en mode de fusion « Multiply » (couleurs officielles CMJN, style
+  de base repris du projet QField) — ces deux couches existaient déjà dans
+  le gpkg produit par la préparation mais n'étaient pas dessinées.
+  Le mode Multiply est nécessaire : un simple aplat semi-opaque (55 %)
+  noyait complètement le hillshade dès que la géologie couvrait toute
+  l'emprise (trouvé en testant sur Marnaval). Exagération verticale du
+  hillshade (zFactor 2,5) : en zone boisée le relief brut restait trop
+  subtil sous la géologie, même en Multiply — un LLM vision risquait de ne
+  plus le distinguer. Piste explorée puis abandonnée : masquer le substrat
+  non-calcaire (regex sur DESCR) pour isoler visuellement le massif des
+  zones urbanisées — vérifié sur données réelles (Marnaval), 64 % de la
+  zone d'étude est en réalité une roche non-calcaire mais porte quand même
+  des dolines ; le critère lexical aurait grisé à tort des zones naturelles
+  boisées pertinentes, sans distinguer fiablement l'urbain (aucune couche
+  bâti n'est persistée dans le gpkg). Une légende est désormais dessinée
+  directement dans l'image (QPainter) : sans elle, le sens des couleurs
+  n'existait que dans le texte du prompt et se perdait si l'image était
+  détachée du .txt.
+
+### Corrigé
+- **Le pendage auto-estimé était présenté au LLM comme un fait, sans jamais
+  transmettre sa fiabilité.** `_estimate_dip` ne retient qu'un R² > 0,4 —
+  un contact à peine mieux qu'aléatoire pouvait être écrit dans le prompt
+  avec la même autorité qu'un contact quasi parfait, sans que le LLM ait
+  aucun moyen de le savoir (le R² n'existait que dans le feedback QGIS, pas
+  dans le texte du prompt). Le texte du pendage inclut désormais le R², le
+  nombre de points d'échantillonnage et un qualificatif de fiabilité
+  (fiable / à confirmer / peu fiable).
+
 ## [1.8.0] — 2026-07-23
 
 ### Ajouté
