@@ -3,6 +3,31 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.8.0] — 2026-07-23
+
+### Ajouté
+- **« Exporter pour analyse MLL » : carte de contexte (PNG).** Génère
+  désormais aussi `carte_<secteur>_<date>.png` (relief/ombrage MNT + dolines
+  colorées par priorité rouge/orange/jaune/gris), à joindre en plus du
+  prompt texte pour un MLL multimodal (vision) — donne un vrai visuel des
+  alignements structuraux, chose que les tableaux de coordonnées ne
+  permettent pas de « voir ». Rendu 100 % QGIS natif
+  (`QgsMapRendererParallelJob`), aucune nouvelle dépendance (pas de
+  matplotlib ni Pillow). Best-effort : un échec de rendu n'empêche pas le
+  reste de l'export.
+
+### Corrigé
+- **Le prompt MLL affirmait « Barrois, AUC 0,65–0,72 » quel que soit le
+  modèle réellement appliqué.** Trouvé en relisant le prompt généré : pour
+  un secteur en Lot/Dordogne/Ardèche (AUC réels 0,602/0,629/0,638), le texte
+  citait quand même la validation Barrois — mensonge factuel au LLM sur la
+  fiabilité du modèle utilisé. Corrigé en texte générique couvrant la plage
+  réelle de tous les domaines (deux occurrences dans le prompt). Root cause
+  non corrigée : le pipeline ne persiste nulle part le `model_id` réellement
+  sélectionné par le routeur (connu à la préparation, seulement loggé en
+  texte libre) — une vraie correction demanderait de le faire persister
+  (gpkg ou `karstpro_etude.json`) pour le relire à l'export.
+
 ## [1.7.1] — 2026-07-21
 
 ### Ajouté

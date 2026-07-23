@@ -1,30 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.7.1">
+    <pyqgis_plugin name="KarstPro" version="1.8.0">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
         <changelog><![CDATA[Ajouté :
-- Installeur Windows autonome (`KarstPro_Setup_v<version>.exe`, Inno
-  Setup). Assistant graphique en une passe : détecte les profils QGIS
-  installés (checklist si plusieurs), propose d'installer les dépendances
-  Python et d'enregistrer le dépôt QGIS custom, avec un vrai désinstalleur
-  (Panneau de configuration). Autonome — n'exécute jamais `install_windows.bat`
-  ni aucun fichier externe : le plugin, le script de dépendances et celui du
-  dépôt sont tous embarqués comme ressources dans le `.exe` et extraits en
-  temporaire à l'exécution. Reprend le logo KarstPro (icône de l'exe, page
-  de bienvenue de l'assistant, icône dans Programmes et fonctionnalités) et
-  un texte de bienvenue décrivant ce que fait le plugin. Généré
-  automatiquement par `build_release.ps1` (nécessite Inno Setup, `winget
-  install JRSoftware.InnoSetup` — best-effort, les autres livrables ne
-  dépendent pas de sa présence). Distribué en asset séparé sur la Release
-  GitHub, pas inclus dans l'archive ZIP existante.
-- Doc d'installation Windows réécrite autour de cet installeur (méthode
-  recommandée, captures d'écran réelles de l'assistant), l'ancienne méthode
-  zip+bat reste documentée pour Linux et en dépannage.]]></changelog>
-        <create_date>2026-07-22T19:41:03.631097+00:00</create_date>
+- « Exporter pour analyse MLL » : carte de contexte (PNG). Génère
+  désormais aussi `carte_<secteur>_<date>.png` (relief/ombrage MNT + dolines
+  colorées par priorité rouge/orange/jaune/gris), à joindre en plus du
+  prompt texte pour un MLL multimodal (vision) — donne un vrai visuel des
+  alignements structuraux, chose que les tableaux de coordonnées ne
+  permettent pas de « voir ». Rendu 100 % QGIS natif
+  (`QgsMapRendererParallelJob`), aucune nouvelle dépendance (pas de
+  matplotlib ni Pillow). Best-effort : un échec de rendu n'empêche pas le
+  reste de l'export.
+
+Corrigé :
+- Le prompt MLL affirmait « Barrois, AUC 0,65–0,72 » quel que soit le
+  modèle réellement appliqué. Trouvé en relisant le prompt généré : pour
+  un secteur en Lot/Dordogne/Ardèche (AUC réels 0,602/0,629/0,638), le texte
+  citait quand même la validation Barrois — mensonge factuel au LLM sur la
+  fiabilité du modèle utilisé. Corrigé en texte générique couvrant la plage
+  réelle de tous les domaines (deux occurrences dans le prompt). Root cause
+  non corrigée : le pipeline ne persiste nulle part le `model_id` réellement
+  sélectionné par le routeur (connu à la préparation, seulement loggé en
+  texte libre) — une vraie correction demanderait de le faire persister
+  (gpkg ou `karstpro_etude.json`) pour le relire à l'export.]]></changelog>
+        <create_date>2026-07-23T10:17:48.897424+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.7.1/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.8.0/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -35,8 +39,8 @@
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-07-22T19:41:03.631097+00:00</update_date>
+        <update_date>2026-07-23T10:17:48.897424+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.7.1</version>
+        <version>1.8.0</version>
     </pyqgis_plugin>
 </plugins>
