@@ -88,7 +88,7 @@ Corrigé :
   dans le texte du prompt). Le texte du pendage inclut désormais le R², le
   nombre de points d'échantillonnage et un qualificatif de fiabilité
   (fiable / à confirmer / peu fiable).]]></changelog>
-        <create_date>2026-07-23T18:13:09.596040+00:00</create_date>
+        <create_date>2026-07-24T12:10:14.454784+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
         <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.9.0/karstpro.zip</download_url>
@@ -102,7 +102,7 @@ Corrigé :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-07-23T18:13:09.596040+00:00</update_date>
+        <update_date>2026-07-24T12:10:14.454784+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
         <version>1.9.0</version>
     </pyqgis_plugin>

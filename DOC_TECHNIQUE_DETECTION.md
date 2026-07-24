@@ -326,6 +326,21 @@ selon trois critères, sans jamais appliquer un modèle hors de son domaine :
    domaine, **veto dur** au-delà de **120 km** ;
 3. **Veto** : hors de ces bornes → poids manuels exploratoires.
 
+> ⚠️ **Être dans la région Barrois ne suffit pas.** Le critère n°1 porte sur la
+> lithologie *réellement sous les dolines*, pas sur une appartenance
+> géographique/administrative au Barrois. Cas réel observé : une petite
+> emprise de test en Haute-Marne, à ~23 km du centroïde du domaine (donc bien
+> sous le seuil d'alerte de 40 km), a été rejetée par le routeur — 215 de ses
+> 223 dolines (96 %) tombaient sur la formation **n2** (sables et grès,
+> Valanginien, non calcaire), et seulement 4 (2 %) sur **j7c** (calcaire,
+> préfixe attendu). Le log affiche alors *« Aucun des 5 modèle(s) de domaine
+> ne correspond à cette zone »* et le score retombe sur les poids manuels
+> exploratoires (`score_ml` = `NaN` pour toutes les dolines). Ce n'est pas un
+> bug : appliquer un modèle entraîné sur du calcaire karstifiable à une
+> emprise essentiellement gréseuse produirait des prédictions sans fondement.
+> Une emprise plus large, couvrant plus de faciès j7/n3/n4, repasserait
+> probablement le seuil de 50 %.
+
 | Modèle | Domaine | AUC | Application |
 |---|---|---|---|
 | **Barrois** | Meuse / Haute-Marne (karst sous couverture) | 0,65–0,72 hors-échantillon | **automatique** |

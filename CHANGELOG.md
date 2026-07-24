@@ -3,6 +3,38 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [Non publié]
+
+### Ajouté
+- **Détection ponctuelle de puits depuis le nuage de points brut (Phase 1,
+  informatif).** Nouveau signal complémentaire aux dolines/gouffres : sous
+  un seuil de surface configurable (défaut 50 m²), compare l'altitude
+  minimale des DERNIERS RETOURS LiDAR bruts (pas seulement les points
+  classés sol) à une référence de voisinage local — révèle parfois une
+  profondeur qu'un puits étroit ne laisse pas voir au MNT lissé (validé sur
+  20+ cas réels, 3 secteurs, 2 régions géologiques, session du
+  2026-07-23/24 — voir
+  `docs/superpowers/specs/2026-07-24-detection-ponctuelle-puits-design.md`).
+  Nouvelles colonnes `pc_plongee_m`, `pc_dist_m`, `pc_n_points` sur la
+  couche `dolines`, purement informatives — n'affecte jamais le score, la
+  priorité, ni le modèle appris. Nouvelle section dans le rapport MLL
+  (repère 🔻). Best-effort : ignoré proprement en mode MNT manuel (nuage de
+  points brut indisponible) ou si le seuil de surface est mis à 0. Script
+  de validation croisée avec les cavités connues (`prototypes/validate_pc_signal.py`)
+  pour accumuler de la preuve avant une éventuelle Phase 2 (intégration au
+  modèle appris + réentraînement).
+  ⚠️ Bug réel trouvé et corrigé en vérifiant sur données réelles (Marnaval)
+  avant de livrer : le raster des derniers retours et le MNT étaient générés
+  par deux appels PDAL séparés, chacun calant sa propre grille sur l'emprise
+  de ses points — décalage de quelques dixièmes de mètre entre les deux. Un
+  rééchantillonnage naïf (fenêtre + `out_shape`) comparait alors des
+  cellules sans rapport, produisant des « plongées » de 30 à 50 m au lieu
+  des 2 à 5 m réels. Corrigé en forçant `generate_pc_rasters` à aligner sa
+  grille pixel pour pixel sur celle du MNT (`origin_x`/`origin_y`/`width`/
+  `height` de `writers.gdal`) — plus besoin de rééchantillonnage, lecture
+  directe. Re-vérifié sur Marnaval après correction (plongées 2,9-5,2 m,
+  cohérentes avec les cas réels connus).
+
 ## [1.9.0] — 2026-07-23
 
 ### Modifié

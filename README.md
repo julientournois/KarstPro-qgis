@@ -40,9 +40,16 @@ QField prêt pour le terrain et un rapport structuré.
   résurgences — BD Topo, couche `bdtopo_eau`) pour les entrées noyées,
   invisibles au MNT (le LiDAR réfléchit sur l'eau).
 - 🎯 **Priorise chaque doline en P1 / P2 / P3** : modèle appris appliqué
-  automatiquement quand la zone est dans un domaine géologique validé
-  (Barrois aujourd'hui), sinon score morphométrique exploratoire sur
-  8 composantes (profondeur, contact géologique, pente, absorption, TPI…).
+  automatiquement quand la zone est dans le domaine géologique validé
+  (Barrois), sinon score morphométrique exploratoire sur 8 composantes
+  (profondeur, contact géologique, pente, absorption, TPI…). Quatre autres
+  modèles régionaux **opt-in** (Jura plateau, Lot, Dordogne, Ardèche) sont
+  activables manuellement via **« Forcer un modèle différent »**.
+- 🔍 **Diagnostique un modèle sur une commune** : applique chaque modèle
+  appris disponible aux dolines déjà détectées et mesure son AUC réel
+  contre un inventaire de cavités connues (même partiel, ou la seule
+  couche Géorisques publique) — vérifie empiriquement si un modèle
+  s'applique avant de l'activer, sans jamais le faire automatiquement.
 - 📱 **Prépare un projet QField** clé en main : symbologie par priorité,
   saisie GPS des nouvelles cavités, **photo** sur les cavités/cibles/gouffres,
   couches de référence en lecture seule, et en option un fond **SCAN25 IGN**
@@ -52,8 +59,11 @@ QField prêt pour le terrain et un rapport structuré.
   Entry** (cavités, cibles et gouffres à intérêt — référence + commune géocodée +
   altitude + photos) et un **rapport PDF**. KarstPro détecte et va sur le
   terrain ; Karst Entry gère l'inventaire et dédoublonne à l'import.
-- 📝 **Exporte pour analyse** : prompt structuré (clusters, contexte), waypoints
-  GPX (Garmin, OruxMaps…) et couches GeoPackage avec ordre de visite optimisé.
+- 📝 **Exporte pour analyse MLL** : prompt narratif structuré + données brutes
+  en JSON séparé (à joindre au même message), waypoints GPX pré-générés
+  (coordonnées exactes, à réordonner) et une **carte de contexte** (relief
+  exagéré, dolines P1/P2, réseau karstique connu, géologie BRGM, échelle et
+  flèche du nord) pour un LLM multimodal.
 - ♻️ **Refait une étude** avec les mêmes paramètres (utile après un changement
   de traitement MNT/détection/scoring) — sans re-saisie, verdicts terrain
   préservés, garde-fous anti-perte de données.
@@ -133,12 +143,14 @@ Les outils apparaissent ensuite dans **Traitement → Boîte à outils → Karst
 ## ⚠️ Portée de l'outil
 
 KarstPro **priorise** la prospection — il ne la remplace pas. Sur un domaine
-géologique validé, un **modèle appris** pilote la priorisation (AUC 0,65–0,72
-hors-échantillon, contre ~0,57 pour les poids manuels). Deux domaines sont
-livrés : **Barrois** (appliqué automatiquement) et **Jura plateau** (opt-in, à
-activer si l'on sait être sur un plateau à gouffres). Hors domaine, la
-priorisation P1/P2/P3 retombe sur un **indice morphologique exploratoire**.
-L'AUC plafonne à ~0,65 par domaine — une limite *physique* de la morphologie de
+géologique validé, un **modèle appris** pilote la priorisation (AUC 0,60–0,72
+hors-échantillon, contre ~0,57 pour les poids manuels). Cinq domaines sont
+livrés : **Barrois** (Meuse/Haute-Marne, appliqué automatiquement) et, en
+**opt-in** (à activer via « Forcer un modèle différent » si l'on connaît le
+contexte géologique local), **Jura plateau** (AUC 0,633), **Ardèche** (0,638),
+**Dordogne** (0,629) et **Lot** (0,602). Hors domaine, la priorisation
+P1/P2/P3 retombe sur un **indice morphologique exploratoire**. L'AUC plafonne
+à ~0,60-0,72 selon le domaine — une limite *physique* de la morphologie de
 surface : ce n'est jamais une prédiction de spéléogenèse, la validation terrain
 reste indispensable. L'inventaire LiDAR et le workflow bureau ↔ terrain, eux,
 sont pleinement opérationnels.
