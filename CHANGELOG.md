@@ -3,7 +3,7 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
-## [Non publié]
+## [1.10.0] — 2026-07-24
 
 ### Ajouté
 - **Détection ponctuelle de puits depuis le nuage de points brut (Phase 1,

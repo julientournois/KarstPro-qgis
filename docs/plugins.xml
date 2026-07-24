@@ -1,97 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.9.0">
+    <pyqgis_plugin name="KarstPro" version="1.10.0">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
-        <changelog><![CDATA[Modifié :
-- Export MLL : JSON séparé du prompt texte, GPX embarqué (pas
-  reconstruit). Le `.txt` mêlait prose et dump JSON brut dans un seul
-  fichier de 400k+ caractères, illisible à l'œil humain. Le JSON est
-  désormais écrit à part (`mll_data_<secteur>_<date>.json`, à joindre au
-  même message MLL) — le `.txt` ne contient plus que le prompt narratif
-  (contexte, règles, mission, tableaux), ~148k caractères sur Marnaval
-  contre ~410k avant. Le GPX pré-généré (coordonnées exactes, script) est
-  désormais embarqué tel quel dans la mission (§5) : le LLM n'a plus à
-  reconstruire un GPX en recopiant lat/lon à la main depuis le JSON pour
-  des dizaines de cibles (risque réel de transcription) — il doit
-  seulement réordonner les `<wpt>` déjà corrects selon l'ordre de visite
-  optimal, sans jamais toucher aux coordonnées. Vérifié sur l'export réel
-  Marnaval : JSON valide (373 entrées), GPX embarqué avec de vraies
-  coordonnées WGS84 (pas de placeholders).
-
-Corrigé :
-- Deux incohérences internes au prompt MLL, trouvées en relecture
-  systématique. (1) La section « Règles d'analyse » affirmait que les
-  dolines grises figuraient dans le JSON brut — faux, le rapport lui-même
-  dit juste avant qu'elles en sont exclues (hors seuil) ; le LLM recevait
-  une instruction contredisant les données sous ses yeux. Corrigé : les
-  grises sont maintenant explicitement décrites comme absentes de tout le
-  rapport (ni tableaux, ni JSON). (2) L'étape « Analyse structurale »
-  demandait de juger la cohérence avec « la trace du contact géologique »
-  sans jamais dire que ce tracé n'existe QUE dans l'image jointe (aucune
-  géométrie de contact n'est fournie en texte/JSON, seul un azimut de
-  pendage l'est) — un LLM texte-only ne pouvait littéralement pas répondre,
-  et un LLM vision ne savait pas qu'il devait regarder l'image pour ça.
-  Corrigé : renvoi explicite et conditionnel vers l'image (ou mention de
-  son absence si aucune carte n'a pu être générée).
-
-Ajouté :
-- Carte de contexte MLL : échelle + flèche du nord + consigne
-  anti-hallucination. Sans repère métrique ni orientation, un LLM vision
-  ne pouvait juger distances/alignements qu'en devinant depuis les pixels.
-  Ajout d'une barre d'échelle (longueur arrondie 1/2/5×10ⁿ) et d'une flèche
-  du nord (canvas jamais tourné → fiable à 100 %), dessinées au QPainter.
-  Le prompt interdit désormais explicitement toute coordonnée/distance
-  déduite de l'image (les tableaux/JSON restent l'unique source de vérité
-  chiffrée) — l'image sert uniquement à l'appréciation qualitative
-  (alignements, orientation, répartition spatiale).
-- Carte de contexte MLL : seules les cibles rouges/oranges tracées. La
-  carte traçait les 4 priorités (rouge/orange/jaune/gris) — sur Marnaval,
-  les grises (68 % du total, 2191/3199) et les jaunes sont entièrement
-  exclues du JSON détaillé du prompt (cf. `P2P3_CAP`) : les tracer
-  n'ajoutait aucune information exploitable par le LLM tout en noyant le
-  hillshade sous des centaines de points. La carte se limite désormais à
-  rouge/orange — exactement le périmètre déjà utilisé pour le clustering
-  structural (`cibles_top`) et détaillé dans les tableaux/JSON. L'emprise
-  de la carte reste calculée sur toutes les dolines (contexte visuel complet
-  du secteur), seul le tracé des points est restreint.
-- Carte de contexte MLL : réseau karstique connu + géologie BRGM + relief
-  exagéré + légende intégrée. La carte (`carte_<secteur>_<date>.png`)
-  affichait déjà le hillshade + les dolines par priorité ; elle affiche
-  désormais aussi le réseau topographié (`topo_reseau`, trait bleu foncé) et
-  les formations géologiques BRGM en semi-transparence, drapées sur le
-  hillshade en mode de fusion « Multiply » (couleurs officielles CMJN, style
-  de base repris du projet QField) — ces deux couches existaient déjà dans
-  le gpkg produit par la préparation mais n'étaient pas dessinées.
-  Le mode Multiply est nécessaire : un simple aplat semi-opaque (55 %)
-  noyait complètement le hillshade dès que la géologie couvrait toute
-  l'emprise (trouvé en testant sur Marnaval). Exagération verticale du
-  hillshade (zFactor 2,5) : en zone boisée le relief brut restait trop
-  subtil sous la géologie, même en Multiply — un LLM vision risquait de ne
-  plus le distinguer. Piste explorée puis abandonnée : masquer le substrat
-  non-calcaire (regex sur DESCR) pour isoler visuellement le massif des
-  zones urbanisées — vérifié sur données réelles (Marnaval), 64 % de la
-  zone d'étude est en réalité une roche non-calcaire mais porte quand même
-  des dolines ; le critère lexical aurait grisé à tort des zones naturelles
-  boisées pertinentes, sans distinguer fiablement l'urbain (aucune couche
-  bâti n'est persistée dans le gpkg). Une légende est désormais dessinée
-  directement dans l'image (QPainter) : sans elle, le sens des couleurs
-  n'existait que dans le texte du prompt et se perdait si l'image était
-  détachée du .txt.
-
-Corrigé :
-- Le pendage auto-estimé était présenté au LLM comme un fait, sans jamais
-  transmettre sa fiabilité. `_estimate_dip` ne retient qu'un R² > 0,4 —
-  un contact à peine mieux qu'aléatoire pouvait être écrit dans le prompt
-  avec la même autorité qu'un contact quasi parfait, sans que le LLM ait
-  aucun moyen de le savoir (le R² n'existait que dans le feedback QGIS, pas
-  dans le texte du prompt). Le texte du pendage inclut désormais le R², le
-  nombre de points d'échantillonnage et un qualificatif de fiabilité
-  (fiable / à confirmer / peu fiable).]]></changelog>
-        <create_date>2026-07-24T12:10:14.454784+00:00</create_date>
+        <changelog><![CDATA[Ajouté :
+- Détection ponctuelle de puits depuis le nuage de points brut (Phase 1,
+  informatif). Nouveau signal complémentaire aux dolines/gouffres : sous
+  un seuil de surface configurable (défaut 50 m²), compare l'altitude
+  minimale des DERNIERS RETOURS LiDAR bruts (pas seulement les points
+  classés sol) à une référence de voisinage local — révèle parfois une
+  profondeur qu'un puits étroit ne laisse pas voir au MNT lissé (validé sur
+  20+ cas réels, 3 secteurs, 2 régions géologiques, session du
+  2026-07-23/24 — voir
+  `docs/superpowers/specs/2026-07-24-detection-ponctuelle-puits-design.md`).
+  Nouvelles colonnes `pc_plongee_m`, `pc_dist_m`, `pc_n_points` sur la
+  couche `dolines`, purement informatives — n'affecte jamais le score, la
+  priorité, ni le modèle appris. Nouvelle section dans le rapport MLL
+  (repère 🔻). Best-effort : ignoré proprement en mode MNT manuel (nuage de
+  points brut indisponible) ou si le seuil de surface est mis à 0. Script
+  de validation croisée avec les cavités connues (`prototypes/validate_pc_signal.py`)
+  pour accumuler de la preuve avant une éventuelle Phase 2 (intégration au
+  modèle appris + réentraînement).
+  ⚠️ Bug réel trouvé et corrigé en vérifiant sur données réelles (Marnaval)
+  avant de livrer : le raster des derniers retours et le MNT étaient générés
+  par deux appels PDAL séparés, chacun calant sa propre grille sur l'emprise
+  de ses points — décalage de quelques dixièmes de mètre entre les deux. Un
+  rééchantillonnage naïf (fenêtre + `out_shape`) comparait alors des
+  cellules sans rapport, produisant des « plongées » de 30 à 50 m au lieu
+  des 2 à 5 m réels. Corrigé en forçant `generate_pc_rasters` à aligner sa
+  grille pixel pour pixel sur celle du MNT (`origin_x`/`origin_y`/`width`/
+  `height` de `writers.gdal`) — plus besoin de rééchantillonnage, lecture
+  directe. Re-vérifié sur Marnaval après correction (plongées 2,9-5,2 m,
+  cohérentes avec les cas réels connus).]]></changelog>
+        <create_date>2026-07-24T12:16:20.205571+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.9.0/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.10.0/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -102,8 +46,8 @@ Corrigé :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-07-24T12:10:14.454784+00:00</update_date>
+        <update_date>2026-07-24T12:16:20.205571+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.9.0</version>
+        <version>1.10.0</version>
     </pyqgis_plugin>
 </plugins>
