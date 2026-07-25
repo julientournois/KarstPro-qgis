@@ -1,6 +1,6 @@
 # KarstPro — Document technique : critères, seuils, outils, modèles
 
-**Version : 1.10.0**
+**Version : 1.10.1**
 
 > Annexe optionnelle au guide d'utilisation (`KarstPro_Documentation.pdf`,
 > fourni à côté de ce fichier) : le détail complet de

@@ -39,6 +39,13 @@ QField prêt pour le terrain et un rapport structuré.
   aussi les **points d'eau karstiques référencés** (sources, pertes, inversacs,
   résurgences — BD Topo, couche `bdtopo_eau`) pour les entrées noyées,
   invisibles au MNT (le LiDAR réfléchit sur l'eau).
+- 🔻 **Détecte un signal ponctuel de puits invisible au MNT lissé** : sous
+  un seuil de surface configurable, compare l'altitude minimale des
+  derniers retours LiDAR bruts à une référence de voisinage — révèle
+  parfois une profondeur qu'un puits étroit ne laisse pas voir une fois le
+  MNT lissé. Purement informatif (n'affecte jamais le score ni la
+  priorité), signalé par un anneau sur la doline concernée et une section
+  dédiée du rapport MLL.
 - 🎯 **Priorise chaque doline en P1 / P2 / P3** : modèle appris appliqué
   automatiquement quand la zone est dans le domaine géologique validé
   (Barrois), sinon score morphométrique exploratoire sur 8 composantes
@@ -60,10 +67,10 @@ QField prêt pour le terrain et un rapport structuré.
   altitude + photos) et un **rapport PDF**. KarstPro détecte et va sur le
   terrain ; Karst Entry gère l'inventaire et dédoublonne à l'import.
 - 📝 **Exporte pour analyse MLL** : prompt narratif structuré + données brutes
-  en JSON séparé (à joindre au même message), waypoints GPX pré-générés
-  (coordonnées exactes, à réordonner) et une **carte de contexte** (relief
-  exagéré, dolines P1/P2, réseau karstique connu, géologie BRGM, échelle et
-  flèche du nord) pour un LLM multimodal.
+  en CSV/JSON séparés (à joindre au même message), une **carte de contexte**
+  (relief exagéré, dolines P1/P2, signal ponctuel LiDAR, réseau karstique
+  connu, géologie BRGM, échelle et flèche du nord) pour un LLM multimodal,
+  et un GPX prêt pour le terrain (Garmin/OruxMaps/QGIS).
 - ♻️ **Refait une étude** avec les mêmes paramètres (utile après un changement
   de traitement MNT/détection/scoring) — sans re-saisie, verdicts terrain
   préservés, garde-fous anti-perte de données.
