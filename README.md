@@ -104,6 +104,24 @@ Exécuter quand même*.
 3. **Redémarrer QGIS**, puis **Extensions → Gérer et installer des extensions →
    Installées** et cocher **KarstPro**.
 
+### Dépôt QGIS custom (mises à jour automatiques, sans rien télécharger)
+
+Pour recevoir les futures versions directement depuis QGIS, sans repasser
+par cette page à chaque fois :
+
+1. **Extensions → Gérer et installer des extensions → Paramètres → Dépôts
+   d'extensions → Ajouter…**
+2. Nom : `KarstPro` — URL :
+   `https://julientournois.github.io/KarstPro-qgis/plugins.xml`
+3. **Extensions → Toutes**, chercher **KarstPro**, installer.
+
+Les méthodes ci-dessus (installeur `.exe`, scripts `install_*`) enregistrent
+ce même dépôt automatiquement — cette méthode manuelle n'est utile que si tu
+préfères l'ajouter toi-même, ou sur une plateforme sans installeur dédié.
+Les dépendances Python restent à installer séparément (cf. « Méthode
+manuelle » ci-dessous) si un dialogue ne te le propose pas automatiquement
+au premier chargement.
+
 ### Méthode manuelle (optionnel)
 
 1. **Plugin** — QGIS → **Extensions → Installer depuis un ZIP** → choisir

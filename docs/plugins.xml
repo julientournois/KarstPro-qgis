@@ -66,7 +66,7 @@ Corrigé :
   Corrigé en reconstruisant les deux renderers via l'API QGIS
   (`_style_dolines`, `_style_gouffres`, mêmes couleurs qu'avant) plutôt
   que via QML écrit à la main.]]></changelog>
-        <create_date>2026-07-25T06:53:04.125165+00:00</create_date>
+        <create_date>2026-07-25T07:25:17.405238+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
         <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.10.1/karstpro.zip</download_url>
@@ -80,7 +80,7 @@ Corrigé :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-07-25T06:53:04.125165+00:00</update_date>
+        <update_date>2026-07-25T07:25:17.405238+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
         <version>1.10.1</version>
     </pyqgis_plugin>
