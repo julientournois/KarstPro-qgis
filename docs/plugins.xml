@@ -1,75 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.10.1">
+    <pyqgis_plugin name="KarstPro" version="1.10.2">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
-        <changelog><![CDATA[Ajouté :
-- Export MLL : CSV de données par doline (`mll_data_<secteur>_<date>.csv`,
-  mêmes lignes que le JSON déjà joint, colonnes = union dynamique des
-  attributs présents). Remplace les tableaux markdown P1 (toutes les rouges)
-  + P2 (30 premières oranges) auparavant embarqués dans le `.txt` — pure
-  redondance avec le JSON. Prompt Marnaval : 133 706 → 119 471 caractères.
-- Symbole « signal ponctuel » intégré aux dolines/à la carte de contexte
-  MLL. Anneau noir posé au centroïde de chaque doline avec un signal
-  `pc_plongee_m` (cf. v1.10.0), intégré DANS le symbole de remplissage de
-  chaque catégorie de priorité (`QgsCentroidFillSymbolLayer`, actif via une
-  propriété data-defined) plutôt qu'une couche point séparée à garder
-  alignée. Même repère (restreint P1/P2) ajouté à la carte de contexte PNG
-  de l'export MLL, avec légende dédiée. Décidé après validation croisée
-  positive sur 8 secteurs réels (ratio 2,2x-6x de cavités connues à
-  proximité d'une doline signalée vs sans signal, session du 2026-07-25).
-
-Modifié :
-- Export MLL : le GPX n'est plus régénéré par le LLM. Le fichier
-  `.gpx` (coordonnées exactes) est écrit une seule fois par script et n'est
-  plus embarqué dans le prompt ni joint au message MLL — redondant avec un
-  fichier déjà correct, et un vrai risque de dégradation silencieuse
-  (troncature/doublon) en lui demandant de réémettre des centaines de
-  `<wpt>`. La mission se limite désormais à donner l'ordre de visite
-  (liste d'IDs par journée de prospection, quelques lignes) ; le `.gpx`
-  reste trié par score brut, à réordonner à la main sur le terrain si
-  besoin.
-
-Corrigé :
-- Blocage de 8h+ à la préparation de grands secteurs boisés (Poligny,
-  Chaux-Neuve). Cause : `shafts.py` déclasse automatiquement en
-  `interet=0` tout gouffre détecté sous canopée fermée (faux positifs
-  LiDAR) — sur un secteur boisé, ça représente la quasi-totalité des
-  gouffres détectés (117 267/118 060 sur Poligny). Le carryover
-  (`capture_investigated_gouffres`) confondait ce déclassement automatique
-  avec un vrai verdict terrain humain, et `apply_gouffres_carryover` les
-  appariait par une double boucle Python sans index spatial —
-  jusqu'à ~14 milliards de comparaisons. Remplacé par un index spatial
-  (`shapely.strtree.STRtree`) dans `apply_gouffres_carryover` et
-  `_suppress_cibles_near` : même volume réel vérifié en 19,5 s au lieu de
-  8h+. Question de comportement non tranchée (hors scope de ce correctif) :
-  un gouffre auto-déclassé canopée ne sera donc jamais reproposé comme
-  cible fraîche à une re-préparation, même si personne ne l'a vraiment
-  regardé.
-- `prototypes/validate_pc_signal.py` : comparaisons de distance fausses
-  si l'inventaire de cavités connues n'est pas en EPSG:2154. Trouvé en
-  conditions réelles (inventaire ASHM en EPSG:4326 contre un secteur en
-  Lambert-93) : les distances comparaient des degrés à des mètres, donnant
-  0% de correspondance sans rapport avec le signal réel. Reprojection
-  automatique (`pyproj.Transformer`) ajoutée avant comparaison.
-- La coloration des couches `dolines` (par priorité) et `gouffres` (par
-  intérêt) ne s'est probablement jamais appliquée, dans aucune version
-  publiée — ni dans le `.qgs`, ni en ouvrant le gpkg brut hors projet.
-  Deux bugs cumulés : (1) `_embed_styles` codait en dur le nom de colonne
-  géométrie `"geometry"` dans la table `layer_styles` du gpkg, alors que
-  pyogrio/GDAL nomme réellement cette colonne `"geom"` pour un GeoPackage —
-  QGIS ne retrouvait donc jamais le style associé à ces couches ; (2) même
-  corrigé, le QML embarqué (`_DOLINES_QML`/`_GOUFFRES_QML`) définissait ses
-  symboles en ligne dans chaque `<category>` au lieu de les référencer
-  depuis le bloc `<symbols>` (format non standard) — QGIS chargeait le bon
-  type de renderer et l'attribut, mais avec zéro catégorie utilisable.
-  Corrigé en reconstruisant les deux renderers via l'API QGIS
-  (`_style_dolines`, `_style_gouffres`, mêmes couleurs qu'avant) plutôt
-  que via QML écrit à la main.]]></changelog>
-        <create_date>2026-07-25T07:25:17.405238+00:00</create_date>
+        <changelog><![CDATA[Modifié :
+- Symboles de carte plafonnés à 2 mm, unité déclarée explicitement
+  (`size_unit=MM`, plutôt que de dépendre du défaut QGIS). L'anneau du
+  signal ponctuel passe de 4 à 2 mm (trait 0,8 → 0,4 mm) — au-delà, il
+  débordait des petites dolines qu'il signale justement (le signal ne
+  concerne que les dolines sous le seuil de surface, souvent quelques m²).
+  Les gouffres passent de 2-4 mm à 1-2 mm, écarts relatifs entre catégories
+  conservés : en secteur boisé dense, des dizaines de milliers de gouffres
+  détectés (cf. `core/shafts.py`) se chevauchaient à l'ancienne taille.]]></changelog>
+        <create_date>2026-07-25T08:15:49.596189+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.10.1/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.10.2/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -80,8 +26,8 @@ Corrigé :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-07-25T07:25:17.405238+00:00</update_date>
+        <update_date>2026-07-25T08:15:49.596189+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.10.1</version>
+        <version>1.10.2</version>
     </pyqgis_plugin>
 </plugins>

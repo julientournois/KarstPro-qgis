@@ -3,6 +3,18 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.10.2] — 2026-07-25
+
+### Modifié
+- **Symboles de carte plafonnés à 2 mm**, unité déclarée explicitement
+  (`size_unit=MM`, plutôt que de dépendre du défaut QGIS). L'anneau du
+  signal ponctuel passe de 4 à 2 mm (trait 0,8 → 0,4 mm) — au-delà, il
+  débordait des petites dolines qu'il signale justement (le signal ne
+  concerne que les dolines sous le seuil de surface, souvent quelques m²).
+  Les gouffres passent de 2-4 mm à 1-2 mm, écarts relatifs entre catégories
+  conservés : en secteur boisé dense, des dizaines de milliers de gouffres
+  détectés (cf. `core/shafts.py`) se chevauchaient à l'ancienne taille.
+
 ## [1.10.1] — 2026-07-25
 
 ### Ajouté
