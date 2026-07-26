@@ -3,6 +3,110 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.11.0] — 2026-07-26
+
+> Version **mineure** et non corrective : trois comportements par défaut
+> changent (seuil de surface du signal ponctuel, visibilité/position de la
+> couche `dolines`, critère de sélection des gouffres dans l'export MLL) et un
+> nouveau fichier de sortie apparaît. Une préparation relancée sur un secteur
+> existant donnera donc des résultats sensiblement différents — en mieux, mais
+> différents.
+
+### Ajouté
+- **Export MLL : les gouffres jamais visités deviennent des cibles à part
+  entière.** Nouveau fichier `mll_gouffres_<secteur>_<date>.csv` (fichier
+  séparé de celui des dolines : un puits se décrit par diamètre/compacité,
+  une doline par surface/profondeur/score — aucune colonne commune, les
+  fusionner donnerait un tableau à moitié vide). La section du rapport est
+  réécrite en conséquence : l'IA est explicitement informée que ce sont des
+  cibles au même titre que les dolines, pas seulement un renfort d'hypothèse.
+
+### Corrigé
+- **~90 % des gouffres à prospecter étaient absents du rapport MLL.** La
+  section ne listait que les candidats à ≤ 100 m d'une cible rouge/orange
+  (plafond 40 lignes), un filtre conçu à l'époque pour masquer les centaines
+  de faux positifs de canopée. Depuis que la canopée est auto-déclassée en
+  `interet = 0` (`core/shafts.py`), ce filtre de distance ne servait plus qu'à
+  perdre de vrais puits : mesuré le 2026-07-26, **Marnaval 111/124 perdus,
+  Beurey 22/23, Sommelonne 2/2** — dont le plus gros puits du secteur
+  (Ø 17,4 m, à 163 m de la doline la plus proche). Le tri se fait désormais
+  sur `interet == -1` (jamais visité), sans contrainte de distance ; la
+  distance reste affichée comme information de regroupement. La colonne
+  `interet` n'était d'ailleurs même pas lue par l'export.
+- **BDLISA : le journal annonçait « ✓ Zone karstique confirmée » sans avoir
+  rien vérifié.** Le serveur eaufrance redirige désormais http→https (301)
+  mais son handshake TLS échoue (`UNEXPECTED_EOF_WHILE_READING`, reproduit en
+  TLS brut avec ET sans vérification de certificat) : la vérification partait
+  systématiquement en *fail-open*, qui renvoie `True` par principe. Nouvelle
+  fonction `check_bdlisa_karst_status` renvoyant `(karstique, vérifié)` —
+  l'API booléenne historique est conservée. Le message devient « ⚠ Service
+  BDLISA indisponible — contexte karstique NON vérifié ». L'appel passe au
+  passage en `https://` (le serveur redirige de toute façon). Le fail-open
+  est inchangé : une panne externe ne bloque jamais une préparation.
+
+### Modifié
+- **Signal ponctuel : deux limites mesurées et documentées.** (1)
+  **Sous-détection sous canopée fermée** — la méthode exige que des derniers
+  retours atteignent le fond du puits ; sous forêt dense il en reste trop peu.
+  Mesuré sur Marnaval : 7,4 % de dolines avec signal sous canopée contre
+  11,4 % à découvert, et deux fois moins de points par cellule (médiane 74
+  contre 134). **L'absence de signal n'infirme donc rien**, surtout en secteur
+  boisé — cette phrase manquait partout, alors qu'elle existait déjà pour les
+  gouffres. Ajoutée au guide, à la doc technique, au journal d'expériences et
+  au rapport MLL (qui affirmait par ailleurs, à tort depuis la validation, ne
+  pas être « encore validé contre un inventaire »). (2) **Biais de
+  découvrabilité testé et largement écarté** : les dolines à signal sont plus
+  proches du bâti (médiane 128 m contre 318 m), mais en ne gardant que les
+  1131 dolines à plus de 500 m de tout bâti, le signal conserve un ratio de
+  4,9× (16,2 % contre 3,3 %) — la corrélation ne s'explique donc pas par
+  l'accessibilité. La doc technique rappelle aussi que toute cette validation
+  reste un **proxy** (cavités déjà connues), et chiffre le coût d'une vraie
+  validation terrain (~158 visites appariées pour l'effet observé).
+- **Détection ponctuelle de puits : le seuil de surface par défaut passe de
+  50 m² à « toutes les dolines ».** L'hypothèse initiale (« le signal n'est
+  fiable que sur les petites dolines ») n'avait jamais été vérifiée — elle est
+  fausse. Mesuré sur **5 secteurs** contre les inventaires de cavités connues
+  (rayon 20 m), le signal est **au moins aussi prédictif au-delà de 50 m²** :
+  Marnaval 7,2× (contre 2,6× sous le seuil), Molain 12,8× (4,1×),
+  Arc-sous-Cicon 7,1× (5,2×), Besain 4,0× (3,9×), Beurey 4,6× (4,9×). Le taux
+  de détection reste stable (8,6–9,0 %) quel que soit le seuil : pas
+  d'explosion de faux positifs. L'ancien défaut excluait donc la population où
+  le signal marche le mieux, et qui contient **78 % des dolines rouges**
+  (57/73 sur Marnaval — le nombre de rouges avec signal y passe de 12 à 29).
+  Le paramètre reste réglable (0 = désactivé, valeur basse = petites dolines
+  seulement).
+- **Couche `dolines` : repositionnée et visible par défaut.** Elle passe sous
+  les points de prospection (cibles, gouffres) et au-dessus des couches de
+  contexte (Géorisques, bdtopo_eau, hydro, géologie) — un polygone ne doit pas
+  masquer les points. Elle n'est plus décochée à l'ouverture : elle l'était
+  tant qu'elle n'avait aucune symbologie exploitable (son style catégorisé
+  n'était en fait jamais chargé), or elle porte désormais la couleur de
+  priorité **et** l'anneau du signal ponctuel — la masquer revenait à cacher
+  ces deux informations.
+- **Documentation de la détection ponctuelle de puits**, jusqu'ici absente
+  partout sauf du CHANGELOG : nouvelle section §2.4 dans
+  `DOC_TECHNIQUE_DETECTION.md` (méthode, seuils, piège d'alignement des
+  grilles PDAL, validation 8 secteurs), encadré dédié dans le guide
+  utilisateur (donc dans le PDF) avec les 3 colonnes `pc_*` en table de
+  référence, et ligne chiffrée dans `JOURNAL_EXPERIENCES.md`.
+- **Aide des fenêtres** : « Exporter pour analyse MLL » distingue désormais
+  explicitement ce qui est **à fournir au chat IA** de ce qui ne l'est pas
+  (le GPX est pour le terrain) ; « Préparer une sortie » documente enfin le
+  paramètre de détection ponctuelle de puits (livré en 1.10.0, jamais
+  mentionné dans l'aide).
+- **Guide utilisateur : la capture du dossier de sortie est remplacée par une
+  arborescence texte** — l'image datait de juin et ne montrait plus les bons
+  fichiers d'export. L'image inutilisée est supprimée du dépôt.
+- **Avertissement clé API SCAN25** : la clé est écrite en clair dans le
+  `.qgs` et `karstpro_etude.json`, qui partent sur QFieldCloud et le
+  téléphone — ne pas partager ces fichiers, révoquer la clé en cas de doute.
+- **Filtre anthropique : trois affirmations fausses corrigées.** Le docstring
+  annonçait les flags `'zone_activite'`/`'bati'` (jamais produits), un
+  commentaire parlait de « carrière/zone d'activité/bâti », et le message de
+  log runtime affichait « carrières / zones d'activité ». Le filtre ne traite
+  que les **carrières** — le bâti est volontairement exclu (un bâtiment n'est
+  pas une dépression), choix désormais justifié par la mesure dans le code.
+
 ## [1.10.2] — 2026-07-25
 
 ### Modifié

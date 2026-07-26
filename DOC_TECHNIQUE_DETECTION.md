@@ -1,6 +1,6 @@
 # KarstPro — Document technique : critères, seuils, outils, modèles
 
-**Version : 1.10.2**
+**Version : 1.11.0**
 
 > Annexe optionnelle au guide d'utilisation (`KarstPro_Documentation.pdf`,
 > fourni à côté de ce fichier) : le détail complet de
@@ -111,6 +111,108 @@ dessus échappaient au filtre.
 Sources, pertes, inversacs, résurgences, exutoires **déjà cartographiés** en BD
 Topo. Ce n'est **pas** de la détection : on localise des features connues
 (comme l'inventaire Géorisques), pour combler l'angle mort des entrées noyées.
+
+### 2.4 Signal ponctuel de puits — colonnes `pc_*` (informatif, hors scoring)
+
+Troisième signal, **complémentaire** aux dolines (§2.1) et aux gouffres (§2.2),
+introduit en v1.10.0. Il exploite le **nuage de points brut**, pas le MNT.
+
+**Le problème.** Un puits étroit peut ne laisser passer qu'une poignée de
+retours LiDAR jusqu'au fond. Ces quelques points survivent dans le nuage brut,
+mais disparaissent au moment où le MNT est lissé/interpolé : la doline en
+surface paraît alors banale (quelques m², peu profonde). Ni la détection de
+cuvettes (§2.1) ni celle de vides NODATA (§2.2) ne voient ce cas.
+
+**Méthode.** On rasterise les **derniers retours uniquement**
+(`ReturnNumber == NumberOfReturns`) en deux bandes (min, count) via PDAL, puis
+on compare cette altitude minimale au MNT. Une cellule est retenue si elle
+plonge à la fois **> 1 m sous le MNT** et **> 1 m sous la médiane de son
+voisinage** (fenêtre 9×9, numpy pur). Colonnes produites : `pc_plongee_m`,
+`pc_dist_m`, `pc_n_points`. Un seuil de surface réglable permet de restreindre
+le test aux petites dolines ; **par défaut, toutes les dolines sont testées**.
+
+> ⚠️ **Seuil de surface — hypothèse initiale réfutée.** Le défaut valait 50 m²
+> à la livraison (v1.10.0), sur l'idée que « le signal n'a de sens que sur les
+> petites dolines » — une intuition jamais vérifiée. Mesuré le 2026-07-26 sur
+> **5 secteurs**, contre les inventaires de cavités connues (rayon 20 m), le
+> signal est **au moins aussi prédictif sur les dolines ≥ 50 m²** :
+>
+> | Secteur | ratio < 50 m² | ratio ≥ 50 m² |
+> |---|---|---|
+> | Marnaval | 2,6× | **7,2×** |
+> | Beurey | 4,9× | 4,6× |
+> | Besain | 3,9× | 4,0× |
+> | Molain | 4,1× | **12,8×** |
+> | Arc-sous-Cicon | 5,2× | **7,1×** |
+>
+> Le taux de détection reste par ailleurs stable (8,6–9,0 %) quel que soit le
+> seuil : pas d'explosion de faux positifs sur les grandes surfaces. L'ancien
+> défaut excluait donc précisément la population où le signal fonctionne le
+> mieux — et qui contient **78 % des dolines rouges** (57/73 sur Marnaval).
+> Seuil par défaut relevé pour couvrir toutes les dolines.
+
+> ⚠️ **Alignement des grilles — piège vérifié.** Le raster des derniers retours
+> et le MNT sont produits par deux appels PDAL distincts ; sans contrainte,
+> chacun cale sa propre grille sur l'emprise de ses points (décalage
+> sub-métrique). Un rééchantillonnage naïf comparait alors des cellules sans
+> rapport et produisait des « plongées » de 30–50 m au lieu de 2–5 m réels.
+> `generate_pc_rasters` force donc `origin_x`/`origin_y`/`width`/`height` de
+> `writers.gdal` sur la grille exacte du MNT — lecture directe, aucun
+> rééchantillonnage.
+
+**Validation croisée (2026-07-25).** Contre les inventaires de cavités connues,
+sur **8 secteurs / 2 régions géologiques**, une doline portant le signal a
+**2,2× à 6×** plus de chances d'avoir une cavité connue à ≤ 20 m qu'une doline
+sans (détail par secteur dans `docs/JOURNAL_EXPERIENCES.md`, outil
+`prototypes/validate_pc_signal.py`). Le signal est aussi **corrélé au score
+existant** (16,4 % des rouges le portent, contre 3–4,5 % des jaunes/grises sur
+Marnaval) : il n'est donc pas un axe indépendant du modèle.
+
+**Statut : informatif uniquement.** Le signal **n'entre pas** dans le score ni
+dans la priorité, et aucun modèle n'a été réentraîné avec. C'est un choix
+délibéré (Phase 1) : la corrélation ci-dessus est encourageante mais reposerait
+sur un plafond d'échantillon trop faible pour justifier de toucher à un scoring
+déjà validé. L'utilisateur voit un anneau sur la doline concernée et une
+section dédiée du rapport MLL ; il tranche lui-même.
+
+### 2.4.1 Limites mesurées — à connaître avant d'exploiter le signal
+
+**a) Sous-détection sous canopée fermée (faux négatifs systématiques).** La
+méthode exige que des derniers retours atteignent le fond du puits. Sous forêt
+dense, la majorité des impulsions est interceptée par la végétation : il reste
+trop peu de points au sol pour que le critère se déclenche. Mesuré sur Marnaval
+(2208 dolines sous végétation fermée BD Topo contre 991 à découvert) :
+
+| Zone | Dolines | Avec signal | Taux | Médiane `pc_n_points` |
+|---|---|---|---|---|
+| sous canopée fermée | 2208 | 163 | **7,4 %** | 74 |
+| hors canopée | 991 | 113 | **11,4 %** | 134 |
+
+C'est la **même physique** que les faux positifs de gouffres sous canopée
+(§2.2), mais inversée : là un vide de végétation imite un puits, ici la
+végétation masque un vrai puits. Conséquence directe : **l'absence de signal
+n'infirme rien**, et encore moins en secteur boisé. Un secteur forestier
+produira mécaniquement moins d'anneaux sans contenir moins de puits.
+
+**b) Biais de découvrabilité — testé, largement écarté.** Les dolines à signal
+sont plus proches du bâti (médiane 128 m contre 318 m), ce qui pourrait faire
+craindre que la corrélation avec les cavités connues mesure surtout
+l'accessibilité (zones déjà prospectées) plutôt que le karst. Contrôle négatif
+sur Marnaval, en ne gardant que les 1131 dolines à **plus de 500 m de tout
+bâti** : le signal conserve un ratio de **4,9×** (16,2 % contre 3,3 %). Le
+biais existe donc, mais n'explique pas l'effet. La proximité au bâti s'explique
+d'ailleurs par le point (a) : moins de forêt près des villages.
+
+**c) La validation reste un proxy.** Tous les chiffres ci-dessus mesurent la
+corrélation avec des **cavités déjà connues** — pas avec « il y a quelque chose
+à trouver ». Or une cavité connue n'est pas un objectif de prospection, et
+« aucune cavité connue à proximité » ne veut pas dire « aucune cavité » (souvent
+personne n'a cherché). Seule une **validation terrain en aveugle, sur paires
+appariées** (même priorité, même surface, même profondeur — la seule différence
+étant le signal) trancherait ; cf. `validation/terrain/PROTOCOLE.md`. Ordre de
+grandeur du coût : ~158 visites pour détecter un effet aussi fort que celui
+observé (16 % contre 3 %), ~658 pour un effet faible (20 % contre 12 %). C'est
+la contrainte dure, pas la méthode.
 
 ---
 
