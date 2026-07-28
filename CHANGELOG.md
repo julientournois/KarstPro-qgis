@@ -3,6 +3,18 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.11.1] — 2026-07-28
+
+### Documenté
+- Investigation complète des pistes d'amélioration de la **détection**
+  (recall, indépendamment du score) : intensité LiDAR, InSAR/EGMS, coupes
+  de forage BSS/BRGM, recall de détection multi-secteurs (dolines/pertes
+  manquées vs `fill_depressions`), et signal ponctuel (`pc_`) utilisé comme
+  détecteur autonome plutôt qu'en score sur dolines déjà détectées. Aucune
+  de ces pistes n'apporte de gain suffisant pour être retenue en l'état —
+  détail des chiffres et de la méthode dans `docs/JOURNAL_EXPERIENCES.md`.
+  Aucun changement de comportement du plugin.
+
 ## [1.11.0] — 2026-07-26
 
 > Version **mineure** et non corrective : trois comportements par défaut
