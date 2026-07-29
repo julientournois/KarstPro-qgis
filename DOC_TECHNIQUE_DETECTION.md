@@ -1,6 +1,6 @@
 # KarstPro — Document technique : critères, seuils, outils, modèles
 
-**Version : 1.11.1**
+**Version : 1.12.0**
 
 > Annexe optionnelle au guide d'utilisation (`KarstPro_Documentation.pdf`,
 > fourni à côté de ce fichier) : le détail complet de
@@ -128,8 +128,11 @@ cuvettes (§2.1) ni celle de vides NODATA (§2.2) ne voient ce cas.
 on compare cette altitude minimale au MNT. Une cellule est retenue si elle
 plonge à la fois **> 1 m sous le MNT** et **> 1 m sous la médiane de son
 voisinage** (fenêtre 9×9, numpy pur). Colonnes produites : `pc_plongee_m`,
-`pc_dist_m`, `pc_n_points`. Un seuil de surface réglable permet de restreindre
-le test aux petites dolines ; **par défaut, toutes les dolines sont testées**.
+`pc_dist_m`, `pc_n_points`. Un seuil de surface (`SEUIL_SURFACE_PC`) permet de
+restreindre le test aux petites dolines ; **par défaut, toutes les dolines
+sont testées**. Depuis le 2026-07-29, ce n'est plus un champ de la fenêtre de
+préparation (rarement changé) — modifiable en éditant `karstpro_etude.json`
+puis « Refaire une étude ».
 
 > ⚠️ **Seuil de surface — hypothèse initiale réfutée.** Le défaut valait 50 m²
 > à la livraison (v1.10.0), sur l'idée que « le signal n'a de sens que sur les
@@ -213,6 +216,66 @@ appariées** (même priorité, même surface, même profondeur — la seule diff
 grandeur du coût : ~158 visites pour détecter un effet aussi fort que celui
 observé (16 % contre 3 %), ~658 pour un effet faible (20 % contre 12 %). C'est
 la contrainte dure, pas la méthode.
+
+### 2.5 Signal d'affaissement historique — colonne `rge_contrast_m` (contribue au score, domaine-dépendant)
+
+Quatrième signal, introduit en v1.11.0 (`core/rgealti.py`). Contrairement au
+signal ponctuel (§2.4), **celui-ci entre dans le modèle appris** là où il a été
+validé — c'est une différence de statut volontaire, décidée après discussion
+explicite avec l'utilisateur (le seuil de preuve exigé pour le signal ponctuel
+n'a jamais été jugé prohibitif ; ici la preuve mesurée a été jugée suffisante
+pour justifier l'intégration).
+
+**Le principe.** L'IGN republie régulièrement des relevés LiDAR d'une même
+zone (RGE ALTI, souvent 2009-2016 selon la campagne, contre LiDAR HD récent).
+Un soutirage karstique actif entre les deux dates laisse une trace : le sol
+s'est affaissé, donc `z_lidar_hd < z_rgealti` localement. La méthode :
+
+1. **Téléchargement aligné** : RGE ALTI récupéré en tuiles WMS (`image/x-bil`,
+   float32, EPSG:2154) sur exactement la même grille que le MNT LiDAR HD déjà
+   généré pour le secteur (`fetch_rgealti_for_secteur`).
+2. **Retrait du biais systématique** : `diff = z_lidar_hd - z_rgealti`, puis un
+   **fond régional** est estimé par médiane sur blocs de 50 m, ré-échantillonné
+   en bilinéaire (numpy pur, pas de scipy — convention du projet) ; `residual =
+   diff - fond`. Ce retrait est nécessaire car les deux relevés ont des biais
+   verticaux systématiques indépendants du karst (géoïde, calibration).
+3. **Contraste doline** : moyenne du `residual` dans un anneau extérieur
+   (60 m) moins la moyenne dans le disque intérieur (15 m) → `rge_contrast_m`.
+   Négatif = affaissement relatif au centre de la doline (signal recherché).
+
+**Contrôle de qualité obligatoire (`is_secteur_eligible`).** Le RGE ALTI est un
+produit hétérogène au niveau national : LiDAR par endroits, **corrélation
+photogrammétrique** ailleurs (bien moins précise, lissée). `estimate_roughness`
+mesure l'écart-type d'un filtre laplacien 3×3 (numpy pur) sur le RGE ALTI ; en
+dessous de `ROUGHNESS_THRESHOLD = 0.06`, le relevé est jugé trop lisse pour
+être du LiDAR et le secteur est **non éligible** : ni la feature ni l'anneau
+n'apparaissent, et le journal de préparation + le rapport MLL l'indiquent
+explicitement. Seuil calibré sur 4 secteurs Barrois connus-LiDAR (0,1221 à
+0,1407 mesuré, largement au-dessus du seuil).
+
+**Validation (2026-07-27/28, Barrois, 4 secteurs contre l'inventaire ASHM)** :
+AUC 0,62 à 0,81 selon secteur/rayon. Stable au changement de fenêtre
+(0,72-0,74), résiste au découpage par canopée (0,676 sous canopée / 0,816 à
+découvert — donc pas un artefact de visibilité comme le signal ponctuel).
+
+> ⚠️ **Ce signal n'est PAS universel — testé et invalidé sur 2 domaines de
+> karst à nu.** Contrairement au signal ponctuel (informatif partout où il est
+> mesuré), l'intégration au score a été testée domaine par domaine par
+> ablation contrôlée (même jeu de secteurs, avec/sans `rge_contrast_m`, gain
+> vérifié secteur par secteur, pas seulement en moyenne — voir §4.3 pour la
+> méthode). **Barrois** : gain net **+0,0089**, positif sur les 4/4 secteurs
+> → intégré. **Lot** (karst à nu, causses) : gain net **-0,0151**, dégradé sur
+> 2/4 secteurs → non intégré. **Jura plateau** (karst à nu) : gain net
+> **-0,0015**, négligeable/mixte → non intégré. Hypothèse retenue : le signal
+> capte un affaissement de surface qui n'existe que sous **couverture
+> sédimentaire** (le relief du soutirage y est masqué, donc un LiDAR ancien
+> peut le rater et un LiDAR récent le révéler) ; un **karst à nu** exprime déjà
+> pleinement sa morphologie en surface, il n'y a rien à « découvrir » par
+> différence temporelle. Détail complet : `docs/JOURNAL_EXPERIENCES.md`.
+> Conséquence pratique : le paramètre `SIGNAL_RGEALTI` reste disponible partout
+> (informatif même hors Barrois — l'anneau et la colonne sont produits dès que
+> le secteur est éligible), mais il **ne contribue au score que via un modèle
+> qui l'inclut dans ses `features`** — aujourd'hui uniquement `barrois_model`.
 
 ---
 
@@ -305,7 +368,8 @@ communes jamais vues**.
 ### 4.2 Anatomie du modèle (`models/barrois_model.json`)
 
 - **Type** : régression logistique (sortie = probabilité calibrée 0–1).
-- **8 variables** (avec leur transformation) :
+- **8 variables historiques** (avec leur transformation, coefficients du modèle
+  d'origine avant l'ajout du signal RGE ALTI) :
 
 | Variable | Transfo | Coefficient appris | Lecture |
 |---|---|---|---|
@@ -317,6 +381,14 @@ communes jamais vues**.
 | `comp_geologie_dist_m` | log | −0,156 | plus loin du contact = moins bien |
 | `lisere` | linéaire | −0,227 | **contre-intuitif** : négatif ici |
 | `pente_max_bord` | linéaire | **−0,299** | **contredit le barème manuel** (où la pente vaut +20) |
+
+> **9ᵉ variable ajoutée en v1.11.0 : `rge_contrast_m`** (§2.5), coefficient
+> **−0,258** dans le modèle actuellement déployé — cohérent avec le signal
+> recherché : un `rge_contrast_m` plus négatif (affaissement plus marqué)
+> augmente la probabilité prédite. Le réentraînement complet a légèrement fait
+> bouger les 8 coefficients historiques ci-dessus (nouveau jeu d'entraînement,
+> cf. §4.3) ; valeurs exactes à jour dans `models/barrois_model.json` plutôt
+> que dans cette table, qui documente la lecture qualitative d'origine.
 
 > **Point honnête et frappant à présenter :** sur la pente de bord et le liseré,
 > le modèle appris **contredit le barème manuel**. Là où l'intuition donnait +20

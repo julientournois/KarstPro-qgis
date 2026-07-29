@@ -3,6 +3,33 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.12.0] — 2026-07-29
+
+### Ajouté
+- **Signal RGE ALTI — affaissement historique** (`core/rgealti.py`) : différence
+  entre le MNT LiDAR HD actuel et un relevé LiDAR ancien de l'IGN (RGE ALTI,
+  souvent 2009-2016), biais systématique retiré (fond régional 50 m, numpy
+  pur). Contrôle qualité obligatoire (rugosité du relevé local) qui écarte
+  automatiquement les zones de corrélation photogrammétrique (non-LiDAR).
+  Dolines concernées : colonnes `rge_contrast_m`/`rge_eligible`, anneau
+  **cyan** sur la carte, section dédiée du rapport MLL. Nouveau paramètre
+  avancé `SIGNAL_RGEALTI` (activé par défaut).
+- **Contrairement au signal ponctuel (`pc_*`, purement informatif), ce
+  signal CONTRIBUE AU SCORE** — mais uniquement là où c'est validé.
+  **Intégré au modèle Barrois** (gain LOCO +0,0089, positif sur les 4
+  secteurs de calibration individuellement). **Testé et REJETÉ** sur le Lot
+  (-0,0151) et le Jura plateau (-0,0015) : hypothèse retenue, le signal capte
+  un affaissement propre au karst **sous couverture sédimentaire**, sans
+  équivalent sur du karst **à nu** (causses, plateaux). Détail complet des
+  trois domaines : `docs/JOURNAL_EXPERIENCES.md`.
+
+### Modifié
+- Fenêtre « Préparer une sortie » simplifiée : `CONTOUR_INTERVAL` et
+  `SEUIL_SURFACE_PC` retirés des paramètres avancés (réglages quasiment
+  jamais changés d'une préparation à l'autre). Toujours modifiables en
+  éditant `karstpro_etude.json` puis en relançant « Refaire une étude » —
+  aucune perte de fonctionnalité, juste moins de champs à l'écran.
+
 ## [1.11.1] — 2026-07-28
 
 ### Documenté
