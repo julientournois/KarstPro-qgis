@@ -68,7 +68,7 @@ Corrigé :
 - SIOSE : budget de réessais insuffisant face aux HTTP 502 du service espagnol,
   et découpe en quadrants au lieu d'une pagination profonde (le temps de réponse
   doublait avec `STARTINDEX`).]]></changelog>
-        <create_date>2026-08-08T09:44:09.085003+00:00</create_date>
+        <create_date>2026-08-08T11:17:47.425852+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
         <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.13.0/karstpro.zip</download_url>
@@ -82,7 +82,7 @@ Corrigé :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-08-08T09:44:09.085003+00:00</update_date>
+        <update_date>2026-08-08T11:17:47.425852+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
         <version>1.13.0</version>
     </pyqgis_plugin>

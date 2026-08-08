@@ -551,7 +551,7 @@ routeur précédent (`core/country_router.py`, supprimé). Conception complète 
 ### Le principe
 
 Le pipeline (`karst_prep_algorithm.py`) ne nomme jamais un territoire. Il
-nomme des **besoins** — les onze *capacités* ci-dessous — et interroge le
+nomme des **besoins** — les douze *capacités* ci-dessous — et interroge le
 territoire choisi pour savoir comment chacune est satisfaite :
 
 ```python
@@ -564,7 +564,7 @@ else:
 
 Un territoire (`france`, `espagne`, menu déroulant `PAYS`, choisi
 explicitement — jamais détecté depuis la bbox, cf. historique ci-dessous)
-déclare chacune des onze capacités sous l'une de trois formes :
+déclare chacune des douze capacités sous l'une de trois formes :
 
 - un **fournisseur déclaratif** — une entrée de config JSON (URL, couche,
   CRS, format) consommée par un client générique ;
@@ -572,30 +572,33 @@ déclare chacune des onze capacités sous l'une de trois formes :
 - une **absence explicite** (`{"type": "absente", "raison": "..."}`), qui
   porte le message montré à l'utilisateur.
 
-### Les onze capacités
+### Les douze capacités
 
-| Capacité | France | Espagne | Forme |
+| Capacité | France | Espagne | Forme (FR / ES) |
 |---|---|---|---|
 | `crs_travail` | EPSG:2154 (Lambert-93) | UTM 29/30/31 selon la longitude du centroïde de la bbox | config / config |
-| `mnt` | LiDAR HD IGN (WFS + téléchargement COPC + PDAL) | LiDAR PNOA 1 m automatique → repli MDT WCS 5 m | adaptateur / adaptateur + config |
+| `mnt` | LiDAR HD IGN (WFS + téléchargement COPC + PDAL) | LiDAR PNOA 1 m automatique → repli MDT WCS 5 m | adaptateur / chaîne |
 | `geologie` | BD Charm-50 (cache local) + repli WFS BRGM | IGME ArcGIS REST (1:50 000 → repli 1:1M) | adaptateur / config |
-| `contexte_karstique` | BDLISA (vérification zone karstique) | **absente** | config |
-| `cavites_connues` | Géorisques | **absente** | config |
-| `obstacles_gouffres` | BD Topo bâti/eau | **absente** | config |
-| `vegetation_gouffres` | BD Topo végétation | **absente** | config |
-| `anthropique_dolines` | BD Topo carrières (filtre) | **absente** | config |
-| `affaissement_historique` | Signal RGE ALTI | **absente** | adaptateur |
-| `modele_appris` | Modèles Barrois/Jura/Lot/Dordogne/Ardèche (§5) | **absente** — scoring exploratoire seul | config |
-| `fonds_carte` | Ortho IGN + SCAN25 (clé perso) + Plan IGN | Ortho PNOA (WMS INSPIRE) | config |
+| `contexte_karstique` | BDLISA (vérification zone karstique) | **absente** | config / absente |
+| `cavites_connues` | Géorisques | **absente** | config / absente |
+| `obstacles_gouffres` | BD Topo bâti/eau | SIOSE — INSPIRE Land Cover (bâti, eau) | adaptateur / adaptateur |
+| `vegetation_gouffres` | BD Topo végétation | SIOSE — INSPIRE Land Cover (végétation) | adaptateur / adaptateur |
+| `anthropique_dolines` | BD Topo carrières (filtre) | **absente** | config / absente |
+| `affaissement_historique` | Signal RGE ALTI | **absente** | adaptateur / absente |
+| `modele_appris` | Modèles Barrois/Jura/Lot/Dordogne/Ardèche (§5) | **absente** — scoring exploratoire seul | config / absente |
+| `fonds_carte` | Ortho IGN + SCAN25 (clé perso) + Plan IGN | Ortho PNOA + MTN raster + IGN Base (WMS INSPIRE) | config / config |
+| `points_eau_karstiques` | BD Topo (sources, pertes, résurgences) | **absente** | adaptateur / absente |
 
-Sept capacités sont déclaratives (URL/couche/CRS suffisent) ; quatre exigent
-un adaptateur en code : `mnt` (les deux territoires), `geologie` (France) et
-`affaissement_historique` (France).
+Côté France, six capacités sont déclaratives (URL/couche/CRS suffisent) et six
+exigent un adaptateur en code : `mnt`, `geologie`, `obstacles_gouffres`,
+`vegetation_gouffres`, `affaissement_historique` et `points_eau_karstiques`.
+Côté Espagne, quatre sont déclaratives, deux sont des adaptateurs (le filtrage
+SIOSE des gouffres) et six sont absentes.
 
 Les six capacités absentes en Espagne portent un message qui explique, dans
-le journal d'exécution, ce qui n'est pas fait et pourquoi (ex. « BD Topo
-indisponible hors de France — candidats gouffres non filtrés, bruit attendu
-en zone boisée »), au lieu de laisser un service français interrogé en
+le journal d'exécution, ce qui n'est pas fait et pourquoi (ex. « Géorisques
+(base française) non applicable hors de France — import ignoré »), au lieu de
+laisser un service français interrogé en
 silence sur une bbox hors de son domaine — c'est exactement le mode de
 panne qui a produit les bugs du 2026-08-02 (BDLISA appelée avec une
 conversion Lambert-93 codée en dur sur des coordonnées espagnoles, BD Topo
