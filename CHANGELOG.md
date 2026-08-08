@@ -3,6 +3,74 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.13.0] — 2026-08-08
+
+Version **multi-pays**. Le pipeline nomme désormais ses *besoins*, jamais ses
+fournisseurs : chaque territoire déclare comment il les satisfait, ou déclare
+explicitement l'absence. Premier territoire ajouté : l'**Espagne**
+(expérimentale).
+
+### Ajouté
+- **Architecture territoires / capacités** (`core/territoires/`) : 12 capacités
+  requises (CRS de travail, MNT, géologie, contexte karstique, cavités connues,
+  obstacles et végétation pour les gouffres, filtre anthropique, affaissement
+  historique, modèle appris, fonds de carte, points d'eau karstiques). Chaque
+  territoire les déclare **toutes**, par un fournisseur ou par `Absente(raison)`.
+  Trois contrôles d'exhaustivité refusent au démarrage une configuration
+  incomplète, inconnue (faute de frappe) ou invalide (capacité obligatoire
+  déclarée absente) — plutôt que d'échouer en cours de préparation.
+- **Configuration déclarative par pays** (`config/territoires/*.json`) : URLs,
+  couches, champs et **projection** en configuration ; tout ce qui comporte une
+  boucle, une condition ou une expression régulière reste du code.
+- **Espagne (expérimentale)** — menu *Pays* dans « Préparer une sortie » :
+  - **LiDAR PNOA 1 m automatique** (CNIG), niveaux NPC01/02/03 avec sélection du
+    plus élaboré par cellule de grille, progression par dalle et cache local
+    identiques à la France ; repli **MDT WCS 5 m** si aucune dalle disponible.
+  - **Géologie IGME** 1/50 000 puis 1/1 M, avec table de karstifiabilité.
+  - **CRS de travail** ETRS89 / UTM 29N, 30N ou 31N, résolu depuis la longitude
+    par table explicite (Canaries non couvertes).
+  - **Fonds de carte** : ortho PNOA, plan MTN raster et IGN Base.
+  - **Filtrage des gouffres par SIOSE** (INSPIRE Land Cover) : 535 → 40
+    candidats/km² sur le secteur de test.
+- **Garde de cohérence du cache `lidar_work/`** : un MNT en cache n'est réutilisé
+  que s'il **couvre réellement** l'emprise demandée ; sinon il est signalé,
+  supprimé avec ses dérivés, et recalculé. Avertissement également si le dossier
+  de sortie contient déjà une autre étude.
+- **Doublure `qgis.core` pour les tests** (`tests/qgis_stub.py`) : les 6 modules
+  d'`algorithms/` deviennent testables sans QGIS installé.
+
+### Modifié
+- Le pays est choisi par un **menu explicite** et non plus déduit de l'emprise :
+  une bbox à cheval sur une frontière n'a pas de réponse correcte.
+- Les paramètres propres à la France sont **grisés et ignorés** hors de France,
+  avec la raison affichée dans le journal plutôt qu'un silence.
+- « MNT déjà présent » devient « MNT déjà présent **et couvrant l'emprise** » —
+  un saut d'étape doit justifier sa validité, pas la supposer.
+
+### Corrigé
+- **Dalles PNOA nommées par le coin haut-gauche**, et non bas-gauche : la
+  sélection était décalée d'une rangée vers le sud. Il manquait jusqu'à 999 m de
+  LiDAR en haut de chaque emprise espagnole et une rangée entière était
+  téléchargée pour rien en bas. Mesuré au mètre près sur deux études.
+- **Cache `lidar_work/` réutilisé sans contrôle** : deux études préparées dans un
+  même dossier de sortie produisaient des résultats parfaitement cohérents entre
+  eux mais **sur la zone de la première**.
+- **5 corruptions silencieuses de CRS** dues à des systèmes codés en dur
+  (proximité aux cavités, Géorisques non conditionné, couche cavités vide,
+  export MLL produisant des coordonnées à 1 500 km).
+- Projet QField figé en EPSG:2154 hors de France ; fond de carte PNOA jamais
+  atteint (CRS transformé en chaîne au lieu de `EPSG:xxxx`, puis préfixe de
+  fuseau `EPSG:2582` faux pour les zones 30 et 31).
+- BDLISA et BD Topo (bases **françaises**) interrogées hors de France, donnant un
+  avertissement « zone non karstique » trompeur en plein karst espagnol.
+- PNOA : faux « blocage » du CNIG (en-têtes navigateur manquants), Navarre sans
+  aucun NPC01, dalles rangées hors de `lidar_work/laz/`, et `laz_files` vide à
+  tort quand le MNT était déjà en cache (fausse mention « mode MNT manuel »).
+- Géologie IGME : `inSR`/`outSR` absents de la requête ArcGIS.
+- SIOSE : budget de réessais insuffisant face aux HTTP 502 du service espagnol,
+  et découpe en quadrants au lieu d'une pagination profonde (le temps de réponse
+  doublait avec `STARTINDEX`).
+
 ## [1.12.0] — 2026-07-29
 
 ### Ajouté

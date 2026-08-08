@@ -1,6 +1,6 @@
 # KarstPro — Document technique : critères, seuils, outils, modèles
 
-**Version : 1.12.0**
+**Version : 1.13.0**
 
 > Annexe optionnelle au guide d'utilisation (`KarstPro_Documentation.pdf`,
 > fourni à côté de ce fichier) : le détail complet de
@@ -538,6 +538,210 @@ selon trois critères, sans jamais appliquer un modèle hors de son domaine :
 > pas être suggérés automatiquement par lithologie ; seule la distance
 > géographique (et le veto à 120 km) s'applique en repli, ou l'activation
 > manuelle par l'utilisateur.
+
+---
+
+## 5bis. Territoires et capacités — France / Espagne
+
+Depuis le 2026-08-02, le routage multi-pays repose sur un modèle
+**territoires / capacités** (`karstpro/core/territoires/`), qui remplace le
+routeur précédent (`core/country_router.py`, supprimé). Conception complète :
+`docs/superpowers/specs/2026-08-02-architecture-territoires-capacites-design.md`.
+
+### Le principe
+
+Le pipeline (`karst_prep_algorithm.py`) ne nomme jamais un territoire. Il
+nomme des **besoins** — les onze *capacités* ci-dessous — et interroge le
+territoire choisi pour savoir comment chacune est satisfaite :
+
+```python
+cap = territoire.capacite("contexte_karstique")
+if cap.absente:
+    feedback.pushInfo(cap.raison)
+else:
+    cap.executer(ctx)
+```
+
+Un territoire (`france`, `espagne`, menu déroulant `PAYS`, choisi
+explicitement — jamais détecté depuis la bbox, cf. historique ci-dessous)
+déclare chacune des onze capacités sous l'une de trois formes :
+
+- un **fournisseur déclaratif** — une entrée de config JSON (URL, couche,
+  CRS, format) consommée par un client générique ;
+- un **adaptateur** — un module de code, pour ce qui a du contrôle de flux ;
+- une **absence explicite** (`{"type": "absente", "raison": "..."}`), qui
+  porte le message montré à l'utilisateur.
+
+### Les onze capacités
+
+| Capacité | France | Espagne | Forme |
+|---|---|---|---|
+| `crs_travail` | EPSG:2154 (Lambert-93) | UTM 29/30/31 selon la longitude du centroïde de la bbox | config / config |
+| `mnt` | LiDAR HD IGN (WFS + téléchargement COPC + PDAL) | LiDAR PNOA 1 m automatique → repli MDT WCS 5 m | adaptateur / adaptateur + config |
+| `geologie` | BD Charm-50 (cache local) + repli WFS BRGM | IGME ArcGIS REST (1:50 000 → repli 1:1M) | adaptateur / config |
+| `contexte_karstique` | BDLISA (vérification zone karstique) | **absente** | config |
+| `cavites_connues` | Géorisques | **absente** | config |
+| `obstacles_gouffres` | BD Topo bâti/eau | **absente** | config |
+| `vegetation_gouffres` | BD Topo végétation | **absente** | config |
+| `anthropique_dolines` | BD Topo carrières (filtre) | **absente** | config |
+| `affaissement_historique` | Signal RGE ALTI | **absente** | adaptateur |
+| `modele_appris` | Modèles Barrois/Jura/Lot/Dordogne/Ardèche (§5) | **absente** — scoring exploratoire seul | config |
+| `fonds_carte` | Ortho IGN + SCAN25 (clé perso) + Plan IGN | Ortho PNOA (WMS INSPIRE) | config |
+
+Sept capacités sont déclaratives (URL/couche/CRS suffisent) ; quatre exigent
+un adaptateur en code : `mnt` (les deux territoires), `geologie` (France) et
+`affaissement_historique` (France).
+
+Les six capacités absentes en Espagne portent un message qui explique, dans
+le journal d'exécution, ce qui n'est pas fait et pourquoi (ex. « BD Topo
+indisponible hors de France — candidats gouffres non filtrés, bruit attendu
+en zone boisée »), au lieu de laisser un service français interrogé en
+silence sur une bbox hors de son domaine — c'est exactement le mode de
+panne qui a produit les bugs du 2026-08-02 (BDLISA appelée avec une
+conversion Lambert-93 codée en dur sur des coordonnées espagnoles, BD Topo
+renvoyant une requête vide silencieuse).
+
+### La frontière config / code
+
+> **Config** = ce qu'un client générique sait consommer : URL, couche,
+> CRS, format, correspondance de champs. **Code** = tout ce qui a du
+> contrôle de flux : enchaînement, pagination, expression régulière, repli
+> conditionnel, pipeline PDAL.
+
+Cette frontière n'est pas un choix esthétique : mesuré sur le code réel,
+**quatre protocoles différents pour deux territoires seulement** —
+
+| Capacité | France | Espagne |
+|---|---|---|
+| MNT | WFS + téléchargement COPC + PDAL | scraping HTML, 3 POST enchaînés, regex, codes INE |
+| MNT (repli) | — | WCS 2.0.1 |
+| Géologie | WFS + GeoPackages locaux embarqués | ArcGIS REST |
+| Fonds de carte | WMS + WMTS | WMS |
+
+— aucune config ne les exprimerait sans réinventer un langage de
+programmation en JSON. `core/lidar_pnoa_auto.py`, l'adaptateur `mnt_pnoa`,
+fait à lui seul **442 lignes** : pagination du listing par commune,
+extraction de `sec=<id>` par expression régulière, deux requêtes POST
+chaînées (`initDescargaDir` puis `descargaDir`), cache par cellule de
+grille 1×1 km, en-têtes HTTP imitant un navigateur (nécessaires : le WAF du
+portail bloque sur la signature de la requête, pas sur l'IP — incident du
+2026-08-02, `docs/JOURNAL_EXPERIENCES.md`). Ces 442 lignes sont
+irréductibles ; c'est ce chiffre qui a tranché contre l'option « tout en
+config ».
+
+À l'inverse, la config apporte un bénéfice réel et mesuré : les quatre
+fonctions de fond de carte (ortho IGN, SCAN25, Plan IGN, ortho PNOA)
+fusionnent en un seul client générique piloté par déclaration, et le bug du
+2026-08-02 (`"EPSG:25830".startswith("EPSG:2582")` faux, branche espagnole
+inatteignable pour les zones 30/31) devient **inexprimable** : il n'y a
+plus de branche par CRS écrite à la main, seulement une table explicite
+zone → code EPSG (`crs_travail` de `espagne.json`, ci-dessous). Aucune
+fabrication de code EPSG par concaténation n'est permise dans le modèle.
+
+```json
+"crs_travail": {
+  "type": "utm_par_longitude",
+  "zones": {"29": "EPSG:25829", "30": "EPSG:25830", "31": "EPSG:25831"}
+}
+```
+
+### Le contrôle d'exhaustivité
+
+La clé de voûte du modèle : un territoire mal déclaré **refuse d'exister**,
+plutôt que de laisser un oubli passer inaperçu jusqu'à un lancement réel
+(le mode de panne qui a produit les trois bugs France-only du 2026-08-02).
+À la construction de chaque `Territoire` (`karstpro/core/territoires/registre.py`) :
+
+- une capacité de la liste figée manquante lève `ConfigurationIncomplete` ;
+- une capacité hors de la liste figée (faute de frappe, ex.
+  `vegetation_gouffre` sans le `s` final) lève `ConfigurationInconnue` —
+  sans ce contrôle, la faute de frappe passerait pour une déclaration
+  valide tout en laissant la vraie capacité manquante ;
+- `crs_travail` ou `mnt` déclarée absente lève `ConfigurationInvalide` : ce
+  sont les deux seules capacités sans lesquelles le pipeline n'a aucun
+  sens.
+
+Un test parcourt tous les territoires × toutes les capacités : ajouter une
+capacité à la liste figée fait échouer immédiatement tout territoire
+incomplet, en test, avant tout lancement. Le chargement des fichiers JSON
+(`karstpro/core/territoires/chargeur.py`) applique le même principe côté
+schéma : type de fournisseur inconnu, champ obligatoire manquant ou
+adaptateur inexistant lèvent au chargement, avec le fichier et la clé
+fautive dans le message — jamais un mode de panne silencieux plus loin
+dans le pipeline.
+
+### Historique de la décision — pourquoi un menu et pas une détection automatique par bbox
+
+La conception initiale (routeur précédent) déduisait le pays des
+coordonnées de la zone d'étude. Abandonnée en cours d'implémentation : les
+rectangles d'emprise France/Espagne se chevauchent sur la côte cantabrique
+(le rectangle France, dimensionné pour couvrir Ouessant en Bretagne, déborde
+jusqu'en Espagne du Nord) — raffiner indéfiniment des polygones d'emprise
+n'aurait fait que déplacer le problème. Le paramètre `PAYS` reste donc un
+menu déroulant explicite (« France » par défaut), jamais une détection.
+
+### Détails opérationnels par capacité
+
+**Géologie Espagne — IGME (`core/geology_igme.py`).** Même patron à deux
+niveaux que le BRGM (§5) : local d'abord, repli national si vide.
+
+| Niveau | Service | URL |
+|---|---|---|
+| 1:50 000 (local) | `IGME_Geode_50`, layer 8 « Recintos geología » | `https://mapas.igme.es/gis/rest/services/Cartografia_Geologica/IGME_Geode_50/MapServer/8/query` |
+| 1:1 000 000 (repli national) | `IGME_Litologias_1M` | `https://mapas.igme.es/gis/rest/services/Cartografia_Geologica/IGME_Litologias_1M/MapServer/0/query` |
+
+Réponse ArcGIS REST JSON (`features[].attributes.Litologia` en texte libre
+espagnol). La karstifiabilité (0–1) est déduite par recherche de
+sous-chaîne (`caliza` → 1.0, `dolom` → 0.9, `yeso` → 0.7, `marga` → 0.4,
+`arenisca` → 0.3, `arcilla` → 0.1, sinon 0.5 par défaut) — une
+approximation de départ par analogie avec la table NOTATION du BD
+Charm-50, pas une vérité géologique établie. ⚠️ Le segment `/rest/` est
+obligatoire dans l'URL : une URL sans ce segment renvoie une page d'erreur
+générique ArcGIS, pas du JSON.
+
+**MNT Espagne — trois chemins, `MNT_FILES` (LAZ PNOA manuel, 1 m)
+prioritaire, PNOA automatique (1 m) ensuite via l'adaptateur `mnt_pnoa`,
+MDT WCS 5 m en dernier repli** (`Chaine` de `espagne.json`, §6.2 du design).
+Le repli WCS (`https://servicios.idee.es/wcs-inspire/mdt`, WCS 2.0.1
+INSPIRE) sert un GeoTIFF sol nu directement, sans LAZ ni PDAL, sur un
+unique coverage `Elevacion25830_5` qui couvre à lui seul les trois fuseaux
+UTM (l'IGN espagnol les a mosaïqués dans une grille 25830 unique — un
+piège identifié en vérifiant `GetCapabilities`, l'hypothèse initiale d'un
+coverage par fuseau était fausse). L'avertissement de résolution dégradée
+n'apparaît que lorsque ce repli est effectivement emprunté. `download_pnoa_auto`
+renvoie les tuiles téléchargées dès qu'**au moins une** a réussi (plus
+tolérant que `download_lidar_tiles` côté France, qui lève au moindre échec)
+— un MNT 1 m partiel reste préférable à jeter tout le résultat pour une
+seule tuile en échec.
+
+**CRS de travail.**
+
+| Territoire | CRS | Calcul |
+|---|---|---|
+| France | `EPSG:2154` (Lambert-93) | fixe |
+| Espagne | `EPSG:2582<zone>` (ETRS89/UTM) | zone UTM (29/30/31) déduite de la longitude du centroïde de la bbox, table explicite (pas de concaténation) |
+
+Codes officiels espagnols (`EPSG:258XX`), pas `EPSG:326XX` WGS84-UTM, pour
+rester cohérent avec le référentiel des données IGME. Une longitude hors
+des zones 29/30/31 (Canaries, zone 28, référentiel différent) lève une
+erreur explicite listant les zones couvertes.
+
+> ⚠️ **Limites actuelles, à connaître avant usage :**
+> - **Espagne continentale uniquement, zones UTM 29/30/31** — Canaries non gérées.
+> - **Pas de modèle appris hors France** — scoring espagnol toujours exploratoire.
+> - **Pas de signal RGE ALTI hors France** — produit IGN français sans équivalent branché.
+> - **LiDAR PNOA : une seule campagne (2022-2025, `codSerie=LIDA3`)** — pas de
+>   comparaison multi-campagnes façon RGE ALTI pour l'instant.
+> - **Automatisation PNOA reposant sur un endpoint non documenté** — le
+>   repli WCS existe précisément pour absorber une panne de ce mécanisme.
+> - **Table de karstifiabilité IGME approximative**, cf. ci-dessus.
+
+**Fond de carte satellite.** L'ortho PNOA (WMS INSPIRE
+`www.ign.es/wms-inspire/pnoa-ma`, layer `OI.OrthoimageCoverage`) est ajoutée
+au projet QGIS/QField généré, décochée par défaut — même patron que l'ortho
+IGN française. SCAN25/Plan IGN restent France-only (produits IGN sans
+équivalent espagnol branché) ; sans ortho, un projet Espagne n'avait
+jusqu'ici que l'ombrage MNT comme repère visuel.
 
 ---
 
