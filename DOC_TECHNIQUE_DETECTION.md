@@ -1,6 +1,6 @@
 # KarstPro — Document technique : critères, seuils, outils, modèles
 
-**Version : 1.13.0**
+**Version : 1.15.0**
 
 > Annexe optionnelle au guide d'utilisation (`KarstPro_Documentation.pdf`,
 > fourni à côté de ce fichier) : le détail complet de
@@ -803,7 +803,7 @@ AUC ≥ 0,60 → « s'applique bien » ; 0,55–0,60 → « s'applique faiblemen
 
 **Read-only.** Aucune couche n'est modifiée, aucun modèle n'est activé
 automatiquement — le choix reste dans le menu « Priorisation » de
-« Préparer une sortie », ou via « Forcer un modèle différent » (§ suivante
+« Préparer une étude », ou via « Forcer un modèle différent » (§ suivante
 implicitement liée, voir le README pour l'usage pas à pas).
 
 ---

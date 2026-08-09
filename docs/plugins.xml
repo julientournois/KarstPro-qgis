@@ -1,77 +1,88 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.13.0">
+    <pyqgis_plugin name="KarstPro" version="1.15.0">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
-        <changelog><![CDATA[Version multi-pays. Le pipeline nomme désormais ses *besoins*, jamais ses
-fournisseurs : chaque territoire déclare comment il les satisfait, ou déclare
-explicitement l'absence. Premier territoire ajouté : l'Espagne
-(expérimentale).
-
-Ajouté :
-- Architecture territoires / capacités (`core/territoires/`) : 12 capacités
-  requises (CRS de travail, MNT, géologie, contexte karstique, cavités connues,
-  obstacles et végétation pour les gouffres, filtre anthropique, affaissement
-  historique, modèle appris, fonds de carte, points d'eau karstiques). Chaque
-  territoire les déclare toutes, par un fournisseur ou par `Absente(raison)`.
-  Trois contrôles d'exhaustivité refusent au démarrage une configuration
-  incomplète, inconnue (faute de frappe) ou invalide (capacité obligatoire
-  déclarée absente) — plutôt que d'échouer en cours de préparation.
-- Configuration déclarative par pays (`config/territoires/*.json`) : URLs,
-  couches, champs et projection en configuration ; tout ce qui comporte une
-  boucle, une condition ou une expression régulière reste du code.
-- Espagne (expérimentale) — menu *Pays* dans « Préparer une sortie » :
-  - LiDAR PNOA 1 m automatique (CNIG), niveaux NPC01/02/03 avec sélection du
-    plus élaboré par cellule de grille, progression par dalle et cache local
-    identiques à la France ; repli MDT WCS 5 m si aucune dalle disponible.
-  - Géologie IGME 1/50 000 puis 1/1 M, avec table de karstifiabilité.
-  - CRS de travail ETRS89 / UTM 29N, 30N ou 31N, résolu depuis la longitude
-    par table explicite (Canaries non couvertes).
-  - Fonds de carte : ortho PNOA, plan MTN raster et IGN Base.
-  - Filtrage des gouffres par SIOSE (INSPIRE Land Cover) : 535 → 40
-    candidats/km² sur le secteur de test.
-- Garde de cohérence du cache `lidar_work/` : un MNT en cache n'est réutilisé
-  que s'il couvre réellement l'emprise demandée ; sinon il est signalé,
-  supprimé avec ses dérivés, et recalculé. Avertissement également si le dossier
-  de sortie contient déjà une autre étude.
-- Doublure `qgis.core` pour les tests (`tests/qgis_stub.py`) : les 6 modules
-  d'`algorithms/` deviennent testables sans QGIS installé.
+        <changelog><![CDATA[Ajouté :
+- Identifiants de dolines stables entre préparations. Le `fid` GeoPackage
+  est un rang d'écriture : dès qu'une doline apparaissait, disparaissait,
+  fusionnait ou se scindait, toutes les suivantes se décalaient, et
+  `doline_1247` d'un rapport MLL ou d'une note de terrain devenait faux.
+  Les dolines portent désormais une colonne `doline_id`, alimentée par un
+  registre (table `doline_ids` du gpkg) et un appariement par recouvrement de
+  polygones. Une doline qui disparaît puis réapparaît retrouve son
+  identifiant ; un identifiant retiré n'est jamais recyclé ; une doline qui
+  se scinde ne le conserve que si la plus grosse pièce représente au moins 60 %
+  de la surface conservée.
+  - Les études existantes conservent leurs numéros : le registre est amorcé
+    sur les `fid` au premier passage.
+  - Sur une étude neuve, le mécanisme est invisible : `doline_id` vaut le
+    `fid`, comme avant. Il ne joue qu'à la re-détection suivante.
+  - Le rapport MLL, le GPX, les regroupements, le CSV et le rapport PDF de la
+    synchro nomment tous les dolines par cet identifiant.
 
 Modifié :
-- Le pays est choisi par un menu explicite et non plus déduit de l'emprise :
-  une bbox à cheval sur une frontière n'a pas de réponse correcte.
-- Les paramètres propres à la France sont grisés et ignorés hors de France,
-  avec la raison affichée dans le journal plutôt qu'un silence.
-- « MNT déjà présent » devient « MNT déjà présent et couvrant l'emprise » —
-  un saut d'étape doit justifier sa validité, pas la supposer.
+- Formulaire de cible allégé : `fid`, `doline_id`, `bassin_versant_m2`,
+  `comp_geologie_dist_m` et `circularite` sont masqués (les colonnes restent en
+  table et au CSV de labels). Le `fid` y était devenu trompeur — affiché au-
+  dessus de l'identifiant, il invitait à lire « doline n° 1 » sur la doline 1247.
+- Toutes les couches produites par KarstPro sont entièrement libellées :
+  plus aucun nom de colonne brut sur `dolines`, `cibles`, `gouffres` ou
+  `courbes_niveau`. Les couches de référence externes (Géorisques, BD TOPO,
+  BD Charm-50) gardent le vocabulaire de leur fournisseur.
+- Les cibles portent `bassin_versant_m2`, `comp_geologie_dist_m` et
+  `circularite` : le label d'une cible dont la doline a disparu reste
+  exploitable au ré-entraînement au lieu de perdre trois features sur neuf.
+- La suppression des cibles déjà prospectées apparie par identifiant, avec la
+  position (5 m) en repli — une doline re-détectée dont le centroïde a bougé de
+  20 m n'est plus re-proposée à l'opérateur.
 
 Corrigé :
-- Dalles PNOA nommées par le coin haut-gauche, et non bas-gauche : la
-  sélection était décalée d'une rangée vers le sud. Il manquait jusqu'à 999 m de
-  LiDAR en haut de chaque emprise espagnole et une rangée entière était
-  téléchargée pour rien en bas. Mesuré au mètre près sur deux études.
-- Cache `lidar_work/` réutilisé sans contrôle : deux études préparées dans un
-  même dossier de sortie produisaient des résultats parfaitement cohérents entre
-  eux mais sur la zone de la première.
-- 5 corruptions silencieuses de CRS dues à des systèmes codés en dur
-  (proximité aux cavités, Géorisques non conditionné, couche cavités vide,
-  export MLL produisant des coordonnées à 1 500 km).
-- Projet QField figé en EPSG:2154 hors de France ; fond de carte PNOA jamais
-  atteint (CRS transformé en chaîne au lieu de `EPSG:xxxx`, puis préfixe de
-  fuseau `EPSG:2582` faux pour les zones 30 et 31).
-- BDLISA et BD Topo (bases françaises) interrogées hors de France, donnant un
-  avertissement « zone non karstique » trompeur en plein karst espagnol.
-- PNOA : faux « blocage » du CNIG (en-têtes navigateur manquants), Navarre sans
-  aucun NPC01, dalles rangées hors de `lidar_work/laz/`, et `laz_files` vide à
-  tort quand le MNT était déjà en cache (fausse mention « mode MNT manuel »).
-- Géologie IGME : `inSR`/`outSR` absents de la requête ArcGIS.
-- SIOSE : budget de réessais insuffisant face aux HTTP 502 du service espagnol,
-  et découpe en quadrants au lieu d'une pagination profonde (le temps de réponse
-  doublait avec `STARTINDEX`).]]></changelog>
-        <create_date>2026-08-08T11:17:47.425852+00:00</create_date>
+- Labels d'entraînement corrompus par la re-préparation. Une cible visitée
+  archivée porte l'identifiant de la préparation où elle a été visitée, et
+  l'archive survit à la re-préparation. `extract_terrain_labels` la joignait par
+  `fid` à la couche `dolines` fraîchement re-détectée : le verdict terrain
+  recevait donc la morphométrie d'une doline sans rapport, et ce vecteur
+  faux partait tel quel dans `labels_terrain.csv`. La jointure se fait
+  maintenant par `doline_id`.
+- « Refaire une étude » plantait à chaque appel depuis la v1.14.0 :
+  `t("… {source}", source=…)` entrait en collision avec le premier paramètre
+  positionnel de `t()`, d'où un `TypeError` immédiat. Jamais publié, donc aucun
+  utilisateur touché. Un test AST interdit désormais ce mot-clé.
+- Le journal de préparation annonçait « Dolines déjà calculées — étape ignorée »
+  alors que la détection re-tournait réellement (MNT rempli en cache mais
+  `dolines.gpkg` absent). C'est justement le cas où les identifiants peuvent
+  bouger, et le journal est le seul endroit où le constater.
+
+Retiré :
+- Colonne `score_positionnel` des couches de cibles : écrite par le packaging,
+  jamais produite par le scoring, jamais relue, absente du schéma. Toujours
+  NULL, et affichée sur le formulaire de terrain.
+
+Vérifié :
+- Bout-en-bout sur Bayard (1806 dolines, 85 cibles visitées) : deux
+  re-préparations headless après suppression de `lidar_work/dolines.gpkg` —
+  donc avec re-détection réelle, whitebox compris — puis deux « Refaire une
+  étude » depuis l'interface QGIS. Dans tous les cas 1806/1806 identifiants
+  conservés, aucun doublon, aucune cible archivée orpheline, les 85 noms de
+  cibles visitées inchangés, géométries identiques à identifiant égal.
+- Robustesse de l'appariement mesurée sur ces mêmes 1806 polygones réels sous
+  dérive du seuil de détection : 96,1 % des identifiants conservés à
+  0,11 m, 92,7 % à 0,12 m, sans aucun doublon ni recyclage.
+
+Note :
+- Tant que `lidar_work/` est intact, « Refaire une étude » saute la détection et
+  relit les mêmes polygones : les identifiants ne bougeaient déjà pas. Ce
+  chantier couvre le cas où la détection re-tourne réellement — dossier de
+  travail supprimé, dossier de sortie neuf, nouvelle génération LiDAR IGN, ou
+  changement de l'algorithme de détection.
+- Le registre vit dans le gpkg du dossier de sortie : re-préparer la même
+  zone dans un dossier neuf, ou sous un autre nom de secteur, renumérote depuis
+  1 (le journal l'indique alors par « première étude de ce dossier »).]]></changelog>
+        <create_date>2026-08-09T14:05:33.178925+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.13.0/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.15.0/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -82,8 +93,8 @@ Corrigé :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-08-08T11:17:47.425852+00:00</update_date>
+        <update_date>2026-08-09T14:05:33.178925+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.13.0</version>
+        <version>1.15.0</version>
     </pyqgis_plugin>
 </plugins>

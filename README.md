@@ -145,7 +145,7 @@ Les outils apparaissent ensuite dans **Traitement → Boîte à outils → Karst
    scorées → QGIS    téléphone         photos terrain    + rapport PDF
 ```
 
-1. **Préparer une sortie** — dessiner la zone, KarstPro télécharge le LiDAR,
+1. **Préparer une étude** — dessiner la zone, KarstPro télécharge le LiDAR,
    détecte et score les dolines, et construit le projet QGIS/QField.
 2. **Envoyer sur le téléphone** via QFieldCloud.
 3. **Saisir** les cavités découvertes sur le terrain (position GPS).

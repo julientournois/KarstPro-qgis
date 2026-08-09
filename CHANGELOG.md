@@ -3,6 +3,128 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.15.0] — 2026-08-09
+
+### Ajouté
+- **Identifiants de dolines stables entre préparations.** Le `fid` GeoPackage
+  est un rang d'écriture : dès qu'une doline apparaissait, disparaissait,
+  fusionnait ou se scindait, toutes les suivantes se décalaient, et
+  `doline_1247` d'un rapport MLL ou d'une note de terrain devenait faux.
+  Les dolines portent désormais une colonne **`doline_id`**, alimentée par un
+  registre (table `doline_ids` du gpkg) et un appariement par recouvrement de
+  polygones. Une doline qui disparaît puis réapparaît **retrouve** son
+  identifiant ; un identifiant retiré n'est **jamais** recyclé ; une doline qui
+  se scinde ne le conserve que si la plus grosse pièce représente au moins 60 %
+  de la surface conservée.
+  - **Les études existantes conservent leurs numéros** : le registre est amorcé
+    sur les `fid` au premier passage.
+  - Sur une **étude neuve**, le mécanisme est invisible : `doline_id` vaut le
+    `fid`, comme avant. Il ne joue qu'à la re-détection suivante.
+  - Le rapport MLL, le GPX, les regroupements, le CSV et le rapport PDF de la
+    synchro nomment tous les dolines par cet identifiant.
+
+### Modifié
+- **Formulaire de cible allégé** : `fid`, `doline_id`, `bassin_versant_m2`,
+  `comp_geologie_dist_m` et `circularite` sont masqués (les colonnes restent en
+  table et au CSV de labels). Le `fid` y était devenu trompeur — affiché au-
+  dessus de l'identifiant, il invitait à lire « doline n° 1 » sur la doline 1247.
+- **Toutes les couches produites par KarstPro sont entièrement libellées** :
+  plus aucun nom de colonne brut sur `dolines`, `cibles`, `gouffres` ou
+  `courbes_niveau`. Les couches de référence externes (Géorisques, BD TOPO,
+  BD Charm-50) gardent le vocabulaire de leur fournisseur.
+- Les cibles portent `bassin_versant_m2`, `comp_geologie_dist_m` et
+  `circularite` : le label d'une cible dont la doline a disparu reste
+  exploitable au ré-entraînement au lieu de perdre trois features sur neuf.
+- La suppression des cibles déjà prospectées apparie par identifiant, avec la
+  position (5 m) en repli — une doline re-détectée dont le centroïde a bougé de
+  20 m n'est plus re-proposée à l'opérateur.
+
+### Corrigé
+- **Labels d'entraînement corrompus par la re-préparation.** Une cible visitée
+  archivée porte l'identifiant de la préparation où elle a été visitée, et
+  l'archive survit à la re-préparation. `extract_terrain_labels` la joignait par
+  `fid` à la couche `dolines` fraîchement re-détectée : le verdict terrain
+  recevait donc la morphométrie d'une doline **sans rapport**, et ce vecteur
+  faux partait tel quel dans `labels_terrain.csv`. La jointure se fait
+  maintenant par `doline_id`.
+- **« Refaire une étude » plantait à chaque appel** depuis la v1.14.0 :
+  `t("… {source}", source=…)` entrait en collision avec le premier paramètre
+  positionnel de `t()`, d'où un `TypeError` immédiat. Jamais publié, donc aucun
+  utilisateur touché. Un test AST interdit désormais ce mot-clé.
+- Le journal de préparation annonçait « Dolines déjà calculées — étape ignorée »
+  alors que la détection re-tournait réellement (MNT rempli en cache mais
+  `dolines.gpkg` absent). C'est justement le cas où les identifiants peuvent
+  bouger, et le journal est le seul endroit où le constater.
+
+### Retiré
+- Colonne `score_positionnel` des couches de cibles : écrite par le packaging,
+  jamais produite par le scoring, jamais relue, absente du schéma. Toujours
+  NULL, et affichée sur le formulaire de terrain.
+
+### Vérifié
+- Bout-en-bout sur **Bayard** (1806 dolines, 85 cibles visitées) : deux
+  re-préparations headless après suppression de `lidar_work/dolines.gpkg` —
+  donc avec re-détection réelle, whitebox compris — puis deux « Refaire une
+  étude » depuis l'interface QGIS. Dans tous les cas **1806/1806 identifiants
+  conservés**, aucun doublon, aucune cible archivée orpheline, les 85 noms de
+  cibles visitées inchangés, géométries identiques à identifiant égal.
+- Robustesse de l'appariement mesurée sur ces mêmes 1806 polygones réels sous
+  dérive du seuil de détection : **96,1 %** des identifiants conservés à
+  0,11 m, **92,7 %** à 0,12 m, sans aucun doublon ni recyclage.
+
+### Note
+- Tant que `lidar_work/` est intact, « Refaire une étude » saute la détection et
+  relit les mêmes polygones : les identifiants ne bougeaient déjà pas. Ce
+  chantier couvre le cas où la détection re-tourne réellement — dossier de
+  travail supprimé, dossier de sortie neuf, nouvelle génération LiDAR IGN, ou
+  changement de l'algorithme de détection.
+- Le registre vit dans le gpkg du **dossier de sortie** : re-préparer la même
+  zone dans un dossier neuf, ou sous un autre nom de secteur, renumérote depuis
+  1 (le journal l'indique alors par « première étude de ce dossier »).
+
+## [1.14.0] — 2026-08-09
+
+### Ajouté
+- **Interface anglaise complète.** KarstPro suit la langue de QGIS : messages,
+  libellés, panneaux d'aide, noms de couches affichés, alias de champs et
+  journaux d'exécution. Catalogue de 304 entrées
+  (`karstpro/i18n/en.json`), mécanisme maison sans dépendance externe
+  (`core/i18n.py`) — un test échoue dès qu'une chaîne est ajoutée sans sa
+  traduction, là où un `.ts` Qt retomberait silencieusement sur le français.
+- **Une locale ni française ni anglaise sert l'anglais**, pas le français : un
+  QGIS espagnol, allemand ou italien affiche désormais l'anglais.
+- **Rapport MLL dans la langue de l'utilisateur.** Le prompt reste français —
+  c'est le document le plus calibré du plugin — mais une consigne « Answer
+  entirely in English » est ajoutée hors français, avec l'instruction de
+  conserver les noms propres et les identifiants.
+- **Alias de champs et value maps dans le projet QField** : `interet` s'affiche
+  « Intérêt » / *Interest*, `type_doline` affiche « doline-perte » /
+  *sinking sinkhole*. Les valeurs stockées et les noms de colonnes ne changent
+  pas.
+
+### Modifié
+- **« Préparer une sortie » devient « Préparer une étude ».** Le français
+  désignait la même opération par deux mots — on *préparait une sortie* mais on
+  *refaisait une étude* — alors que l'artefact produit s'appelle
+  `karstpro_etude.json`. Vocabulaire désormais net : **étude** = le dossier
+  bureau, **sortie** = l'aller sur le terrain.
+  L'identifiant de l'algorithme (`karstpro:karst_prep`) est **inchangé** : les
+  modèles Processing, scripts et raccourcis existants continuent de
+  fonctionner, et « Refaire une étude » relit toujours les journaux antérieurs.
+- Les panneaux d'aide des 6 algorithmes vivent désormais dans
+  `i18n/aide/<algo>.<langue>.html` — les fichiers d'algorithmes perdent 256
+  lignes de texte qui n'y avaient pas leur place.
+- `core/report.py` ne porte plus sa propre table de libellés : le rapport PDF
+  lit le catalogue commun. La duplication et l'absence de traduction
+  disparaissent ensemble.
+
+### Corrigé
+- Les **raisons d'absence de capacité** (BDLISA, Géorisques, BD Topo, RGE ALTI…)
+  sortaient en français même en anglais : elles sont poussées en variable, donc
+  jamais traduites à l'affichage. Corrigé à la source dans `Absente.raison`.
+- Captures d'écran de la documentation refaites après le renommage.
+
+
 ## [1.13.0] — 2026-08-08
 
 Version **multi-pays**. Le pipeline nomme désormais ses *besoins*, jamais ses
