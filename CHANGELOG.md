@@ -3,6 +3,27 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.16.1] — 2026-08-10
+
+### Corrigé
+- **Aucun fond de carte en Wallonie.** La 1.16.0 livrait le territoire wallon
+  sans fond : un projet s'ouvrait sur du blanc. Deux services SPW sont branchés,
+  vérifiés avant d'être déclarés — **Ortho SPW** (`ORTHO_LAST`, qui pointe
+  toujours la dernière orthophoto : rien à maintenir au changement de millésime)
+  et **PICC**, le fond topographique wallon, tous deux en EPSG:3812.
+- **La carte de décision imprimée n'avait aucun fond hors de France.** La liste
+  des fonds était codée en dur avec les noms français (« Plan IGN », « SCAN25
+  IGN »), introuvables ailleurs. Chaque fond porte désormais une clé
+  `impression` dans le JSON de son territoire : **c'est le territoire qui
+  décide**, plus la mise en page. L'orthophoto satellite en est écartée dans les
+  trois pays — posée sur une feuille elle masquerait le fond topographique —
+  mais elle reste dans le projet, activable à la main.
+
+### Note
+- Le smoke test des mises en page refuse maintenant une carte de décision sans
+  fond de carte. Il comptait les couches sans regarder ce qu'elles étaient,
+  et déclarait « OK » sur une feuille qui serait sortie vide.
+
 ## [1.16.0] — 2026-08-10
 
 ### Ajouté
