@@ -1,88 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.15.0">
+    <pyqgis_plugin name="KarstPro" version="1.16.0">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
         <changelog><![CDATA[Ajouté :
-- Identifiants de dolines stables entre préparations. Le `fid` GeoPackage
-  est un rang d'écriture : dès qu'une doline apparaissait, disparaissait,
-  fusionnait ou se scindait, toutes les suivantes se décalaient, et
-  `doline_1247` d'un rapport MLL ou d'une note de terrain devenait faux.
-  Les dolines portent désormais une colonne `doline_id`, alimentée par un
-  registre (table `doline_ids` du gpkg) et un appariement par recouvrement de
-  polygones. Une doline qui disparaît puis réapparaît retrouve son
-  identifiant ; un identifiant retiré n'est jamais recyclé ; une doline qui
-  se scinde ne le conserve que si la plus grosse pièce représente au moins 60 %
-  de la surface conservée.
-  - Les études existantes conservent leurs numéros : le registre est amorcé
-    sur les `fid` au premier passage.
-  - Sur une étude neuve, le mécanisme est invisible : `doline_id` vaut le
-    `fid`, comme avant. Il ne joue qu'à la re-détection suivante.
-  - Le rapport MLL, le GPX, les regroupements, le CSV et le rapport PDF de la
-    synchro nomment tous les dolines par cet identifiant.
-
-Modifié :
-- Formulaire de cible allégé : `fid`, `doline_id`, `bassin_versant_m2`,
-  `comp_geologie_dist_m` et `circularite` sont masqués (les colonnes restent en
-  table et au CSV de labels). Le `fid` y était devenu trompeur — affiché au-
-  dessus de l'identifiant, il invitait à lire « doline n° 1 » sur la doline 1247.
-- Toutes les couches produites par KarstPro sont entièrement libellées :
-  plus aucun nom de colonne brut sur `dolines`, `cibles`, `gouffres` ou
-  `courbes_niveau`. Les couches de référence externes (Géorisques, BD TOPO,
-  BD Charm-50) gardent le vocabulaire de leur fournisseur.
-- Les cibles portent `bassin_versant_m2`, `comp_geologie_dist_m` et
-  `circularite` : le label d'une cible dont la doline a disparu reste
-  exploitable au ré-entraînement au lieu de perdre trois features sur neuf.
-- La suppression des cibles déjà prospectées apparie par identifiant, avec la
-  position (5 m) en repli — une doline re-détectée dont le centroïde a bougé de
-  20 m n'est plus re-proposée à l'opérateur.
+- Deux mises en page imprimables dans le projet QGIS généré, pour préparer
+  une sortie sur papier (la navigation reste sur QField).
+  - « Carte de décision » — *où aller* : fond IGN, cibles P1 et P2
+    étiquetées par leur `doline_id`, cibles déjà visitées, cavités connues,
+    gouffres, réseau topographié.
+  - « Carte morphologique » — *pourquoi c'est là* : ombrage du MNT, tous
+    les polygones de dolines, cibles P1/P2 par-dessus. Sur un ombrage on juge
+    la forme, l'alignement et la densité.
+  - Légende curée, jamais automatique : une légende automatique listerait
+    l'hydrologie D8 (235 872 segments sur Bayard) et les 24 formations
+    BD Charm-50. A3 paysage, barre d'échelle, flèche nord.
+  - Le fond SCAN25 est empilé sur le Plan IGN plutôt que choisi : le SCAN25
+    rend une couche vide *sans erreur* quand la clé est invalide, l'empilement
+    supprime ce cas au lieu de tenter de le détecter.
+  - Pas de carte morphologique si `lidar_work/mnt.tif` est absent — mieux vaut
+    une mise en page manquante qu'une page ouverte sur une couche manquante.
+- Territoire Wallonie (expérimental), sélectionnable dans le menu Pays.
+  Géologie karstifiable et contexte adossés à l'Atlas du Karst Wallon
+  (9902 sites). MNT LiDAR 1 m 2021-2022 fourni à la main : aucun service
+  wallon ne le sert (WCS INSPIRE sans couverture, ArcGIS en MapServer).
+- Type de capacité `manuel` pour les territoires dont le MNT n'est
+  récupérable par aucune API — cas probablement majoritaire hors de France et
+  d'Espagne. Fournir le MNT soi-même *est* une source, pas une absence.
+- Outils de validation réutilisables : `validation/inventaire/valider_akwa.py`
+  (convention ASHM, comparable aux chiffres français), `prototypes/cv_wallonie.py`
+  (validation croisée spatiale), `prototypes/decouper_mnt.py`.
+- Smoke tests headless pour « Préparer une étude » et pour la composition des
+  mises en page — le smoke test existant ne couvrait pas ces algorithmes.
 
 Corrigé :
-- Labels d'entraînement corrompus par la re-préparation. Une cible visitée
-  archivée porte l'identifiant de la préparation où elle a été visitée, et
-  l'archive survit à la re-préparation. `extract_terrain_labels` la joignait par
-  `fid` à la couche `dolines` fraîchement re-détectée : le verdict terrain
-  recevait donc la morphométrie d'une doline sans rapport, et ce vecteur
-  faux partait tel quel dans `labels_terrain.csv`. La jointure se fait
-  maintenant par `doline_id`.
-- « Refaire une étude » plantait à chaque appel depuis la v1.14.0 :
-  `t("… {source}", source=…)` entrait en collision avec le premier paramètre
-  positionnel de `t()`, d'où un `TypeError` immédiat. Jamais publié, donc aucun
-  utilisateur touché. Un test AST interdit désormais ce mot-clé.
-- Le journal de préparation annonçait « Dolines déjà calculées — étape ignorée »
-  alors que la détection re-tournait réellement (MNT rempli en cache mais
-  `dolines.gpkg` absent). C'est justement le cas où les identifiants peuvent
-  bouger, et le journal est le seul endroit où le constater.
-
-Retiré :
-- Colonne `score_positionnel` des couches de cibles : écrite par le packaging,
-  jamais produite par le scoring, jamais relue, absente du schéma. Toujours
-  NULL, et affichée sur le formulaire de terrain.
+- Les couches de cibles étaient écrites sans type de géométrie. Créées
+  vides, leur `GeoSeries` non typée produisait une géométrie générique et le
+  `.qgs` les déclarait « No geometry ». Aucune étiquette ne pouvait y être
+  posée, et le même défaut empêche QField de reconnaître une couche de points.
+- Les libellés français de quatre couches valaient leur nom de table
+  (`cavites_georisques`, `bdtopo_eau`, `topo_reseau`, `courbes_niveau`), alors
+  que l'anglais avait de vrais noms : le panneau de couches était plus lisible
+  en anglais qu'en français. `cavites_connues` n'avait aucun libellé.
+- Le type de capacité `arcgis` n'était pas générique : il ignorait l'URL
+  déclarée et appelait l'IGME espagnol en dur.
+- `cavites_connues` n'était pas routée : la préparation appelait Géorisques
+  (service français) quel que soit le territoire.
+- Le garde-fou de packaging ne comparait que les versions : ajouter un
+  fichier après un build laissait l'artefact à la bonne version mais incomplet,
+  et les tests échouaient au lieu de se sauter.
+- Le libellé de « MNT pré-téléchargés » annonçait « dernier recours en France,
+  optionnel en Espagne » alors qu'en Wallonie c'est la seule source.
 
 Vérifié :
-- Bout-en-bout sur Bayard (1806 dolines, 85 cibles visitées) : deux
-  re-préparations headless après suppression de `lidar_work/dolines.gpkg` —
-  donc avec re-détection réelle, whitebox compris — puis deux « Refaire une
-  étude » depuis l'interface QGIS. Dans tous les cas 1806/1806 identifiants
-  conservés, aucun doublon, aucune cible archivée orpheline, les 85 noms de
-  cibles visitées inchangés, géométries identiques à identifiant égal.
-- Robustesse de l'appariement mesurée sur ces mêmes 1806 polygones réels sous
-  dérive du seuil de détection : 96,1 % des identifiants conservés à
-  0,11 m, 92,7 % à 0,12 m, sans aucun doublon ni recyclage.
-
-Note :
-- Tant que `lidar_work/` est intact, « Refaire une étude » saute la détection et
-  relit les mêmes polygones : les identifiants ne bougeaient déjà pas. Ce
-  chantier couvre le cas où la détection re-tourne réellement — dossier de
-  travail supprimé, dossier de sortie neuf, nouvelle génération LiDAR IGN, ou
-  changement de l'algorithme de détection.
-- Le registre vit dans le gpkg du dossier de sortie : re-préparer la même
-  zone dans un dossier neuf, ou sous un autre nom de secteur, renumérote depuis
-  1 (le journal l'indique alors par « première étude de ce dossier »).]]></changelog>
-        <create_date>2026-08-09T14:05:33.178925+00:00</create_date>
+- Wallonie / Calestienne mesurée, résultat NÉGATIF, piste close. Sur
+  Rochefort (6437 dolines, 358 sites de l'Atlas) : à géologie constante le
+  barème Barrois donne AUC 0,455, sous le hasard ; un modèle appris en
+  validation croisée spatiale atteint 0,697, moins que le TPI 500 m inversé
+  seul (0,736). Le premier chiffre encourageant (0,770) était une tautologie
+  — `comp_geologie` seule fait 0,864. Détail et leçon transposable dans
+  `docs/JOURNAL_EXPERIENCES.md`.]]></changelog>
+        <create_date>2026-08-10T09:38:28.944835+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.15.0/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.16.0/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -93,8 +74,8 @@ Note :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-08-09T14:05:33.178925+00:00</update_date>
+        <update_date>2026-08-10T09:38:28.944835+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.15.0</version>
+        <version>1.16.0</version>
     </pyqgis_plugin>
 </plugins>

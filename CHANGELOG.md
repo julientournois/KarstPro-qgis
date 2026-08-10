@@ -3,6 +3,66 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.16.0] — 2026-08-10
+
+### Ajouté
+- **Deux mises en page imprimables** dans le projet QGIS généré, pour préparer
+  une sortie sur papier (la navigation reste sur QField).
+  - **« Carte de décision »** — *où aller* : fond IGN, cibles P1 et P2
+    **étiquetées par leur `doline_id`**, cibles déjà visitées, cavités connues,
+    gouffres, réseau topographié.
+  - **« Carte morphologique »** — *pourquoi c'est là* : ombrage du MNT, tous
+    les polygones de dolines, cibles P1/P2 par-dessus. Sur un ombrage on juge
+    la forme, l'alignement et la densité.
+  - **Légende curée, jamais automatique** : une légende automatique listerait
+    l'hydrologie D8 (235 872 segments sur Bayard) et les 24 formations
+    BD Charm-50. A3 paysage, barre d'échelle, flèche nord.
+  - Le fond SCAN25 est **empilé sur** le Plan IGN plutôt que choisi : le SCAN25
+    rend une couche vide *sans erreur* quand la clé est invalide, l'empilement
+    supprime ce cas au lieu de tenter de le détecter.
+  - Pas de carte morphologique si `lidar_work/mnt.tif` est absent — mieux vaut
+    une mise en page manquante qu'une page ouverte sur une couche manquante.
+- **Territoire Wallonie (expérimental)**, sélectionnable dans le menu Pays.
+  Géologie karstifiable et contexte adossés à l'**Atlas du Karst Wallon**
+  (9902 sites). MNT LiDAR 1 m 2021-2022 fourni **à la main** : aucun service
+  wallon ne le sert (WCS INSPIRE sans couverture, ArcGIS en MapServer).
+- **Type de capacité `manuel`** pour les territoires dont le MNT n'est
+  récupérable par aucune API — cas probablement majoritaire hors de France et
+  d'Espagne. Fournir le MNT soi-même *est* une source, pas une absence.
+- Outils de validation réutilisables : `validation/inventaire/valider_akwa.py`
+  (convention ASHM, comparable aux chiffres français), `prototypes/cv_wallonie.py`
+  (validation croisée spatiale), `prototypes/decouper_mnt.py`.
+- Smoke tests headless pour « Préparer une étude » et pour la composition des
+  mises en page — le smoke test existant ne couvrait pas ces algorithmes.
+
+### Corrigé
+- **Les couches de cibles étaient écrites sans type de géométrie.** Créées
+  vides, leur `GeoSeries` non typée produisait une géométrie générique et le
+  `.qgs` les déclarait « No geometry ». Aucune étiquette ne pouvait y être
+  posée, et le même défaut empêche QField de reconnaître une couche de points.
+- **Les libellés français de quatre couches valaient leur nom de table**
+  (`cavites_georisques`, `bdtopo_eau`, `topo_reseau`, `courbes_niveau`), alors
+  que l'anglais avait de vrais noms : le panneau de couches était plus lisible
+  en anglais qu'en français. `cavites_connues` n'avait aucun libellé.
+- Le type de capacité `arcgis` **n'était pas générique** : il ignorait l'URL
+  déclarée et appelait l'IGME espagnol en dur.
+- `cavites_connues` **n'était pas routée** : la préparation appelait Géorisques
+  (service français) quel que soit le territoire.
+- Le garde-fou de packaging ne comparait que les **versions** : ajouter un
+  fichier après un build laissait l'artefact à la bonne version mais incomplet,
+  et les tests échouaient au lieu de se sauter.
+- Le libellé de « MNT pré-téléchargés » annonçait « dernier recours en France,
+  optionnel en Espagne » alors qu'en Wallonie c'est la **seule** source.
+
+### Vérifié
+- **Wallonie / Calestienne mesurée, résultat NÉGATIF, piste close.** Sur
+  Rochefort (6437 dolines, 358 sites de l'Atlas) : à géologie constante le
+  barème Barrois donne AUC **0,455**, sous le hasard ; un modèle appris en
+  validation croisée spatiale atteint 0,697, **moins que le TPI 500 m inversé
+  seul (0,736)**. Le premier chiffre encourageant (0,770) était une tautologie
+  — `comp_geologie` seule fait 0,864. Détail et leçon transposable dans
+  `docs/JOURNAL_EXPERIENCES.md`.
+
 ## [1.15.0] — 2026-08-09
 
 ### Ajouté
