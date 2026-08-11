@@ -3,6 +3,62 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.17.0] — 2026-08-11
+
+### Ajouté
+- **Atlas du Karst Wallon dans les projets wallons.** Un projet wallon
+  s'ouvrait sans **aucune** cavité — la table `cavites` de Rochefort comptait
+  0 objet. Quatre couches de l'AKWA (CWEPSS / SPW, CC-BY 4.0) sont désormais
+  téléchargées dans le GeoPackage : sites karstiques, sites de surface > 30 m,
+  galeries et écoulements souterrains (385, 5, 24 et 26 objets sur Rochefort).
+  Les sites et les galeries entrent dans la légende de la carte de décision.
+- **Treizième capacité `couches_contexte`** : un territoire peut déclarer ses
+  propres couches vectorielles de contexte, que le pipeline transporte jusqu'au
+  projet sans savoir ce qu'elles contiennent. France et Espagne la déclarent
+  absente — aucun changement de comportement de leur côté.
+
+### Corrigé
+- **Les candidats gouffres sous canopée ne sont plus livrés.** Sur un secteur
+  boisé ils forment 99 % du volume — 117 267 des 118 060 de Poligny, 41 188 des
+  42 220 des Eyzies — et rendaient le projet QGIS comme la synchronisation
+  QField inexploitables. `shafts.py` les identifiait déjà correctement ; c'est
+  la décision de les garder qui produisait le bruit. Le jeu complet reste dans
+  `lidar_work/gouffres.gpkg`, donc rien n'est perdu.
+- Un candidat déclassé par la canopée que l'on **est allé voir** revient dans la
+  couche : le `0` de `interet` signifiant aussi « visité, sans intérêt », une
+  colonne `veg_dense` distingue désormais le déclassement automatique du
+  jugement humain, et le report des gouffres investigués la lève.
+
+- **Le fond de carte wallon ne s'affichait pas.** La couche déclarée pour le
+  PICC — la n° 1 — n'est pas un fond topographique : c'est « Hydrographie —
+  Emprise », et elle rend **0 % de pixels opaques**. Ce service n'expose aucune
+  couche de fond unique ; l'empilement déclaré désormais (occupation du sol,
+  hydrographie, voirie, bâti, ferroviaire, toponymie) en rend 44 %.
+- **Ajout de CartoWeb topo (NGI)**, la carte topographique de l'IGN belge,
+  servie en EPSG:3812 natif : l'équivalent wallon du SCAN25. C'est ce fond qui
+  part à l'impression, à la place de l'ancien PICC muet.
+- Un fond WMS à **plusieurs sous-couches** exige `layers=` répété : le
+  fournisseur de QGIS rejette une liste séparée par des virgules avec
+  « Cannot calculate extent » et aucune autre explication.
+- L'`apikey` n'est plus ajoutée qu'aux services qui la réclament. Codée en dur
+  dans le constructeur d'URI WMTS pour le SCAN25 IGN (produit payant), elle
+  partait aussi vers les services ouverts, qui recevaient « apikey=None ».
+- **La couche des dépressions détectées s'ouvre désormais décochée.** 6 438
+  polygones contre 65 cibles P1 sur Rochefort : cochée, elle noyait la carte à
+  l'ouverture. Elle était masquée jusqu'en 1.11.0, où elle a cessé de l'être
+  sans que la documentation du code suive. Elle reste dans le projet, et dans la
+  carte morphologique imprimée.
+
+### Note
+- L'AKWA reste une donnée de **contexte** : il ne nourrit aucun score. Une
+  doline posée sur un chantoir catalogué reste donc P1 au lieu d'être écartée.
+  Router `cavites_connues` réécrirait le chemin Géorisques français et rendrait
+  toute remesure wallonne circulaire — cf.
+  `docs/superpowers/specs/2026-08-10-couches-contexte-territoire-design.md`.
+- Les trois fonds wallons sont désormais validés par un **rendu réel** (GetMap
+  et GetTile), pas par une simple réponse du service : les quatre défauts
+  ci-dessus étaient tous invisibles à un `GetCapabilities`.
+
 ## [1.16.1] — 2026-08-10
 
 ### Corrigé

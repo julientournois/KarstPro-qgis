@@ -1,6 +1,6 @@
 # KarstPro — Document technique : critères, seuils, outils, modèles
 
-**Version : 1.16.1**
+**Version : 1.17.0**
 
 > Annexe optionnelle au guide d'utilisation (`KarstPro_Documentation.pdf`,
 > fourni à côté de ce fichier) : le détail complet de
@@ -551,7 +551,7 @@ routeur précédent (`core/country_router.py`, supprimé). Conception complète 
 ### Le principe
 
 Le pipeline (`karst_prep_algorithm.py`) ne nomme jamais un territoire. Il
-nomme des **besoins** — les douze *capacités* ci-dessous — et interroge le
+nomme des **besoins** — les treize *capacités* ci-dessous — et interroge le
 territoire choisi pour savoir comment chacune est satisfaite :
 
 ```python
@@ -564,7 +564,7 @@ else:
 
 Un territoire (`france`, `espagne`, menu déroulant `PAYS`, choisi
 explicitement — jamais détecté depuis la bbox, cf. historique ci-dessous)
-déclare chacune des douze capacités sous l'une de trois formes :
+déclare chacune des treize capacités sous l'une de trois formes :
 
 - un **fournisseur déclaratif** — une entrée de config JSON (URL, couche,
   CRS, format) consommée par un client générique ;
@@ -572,7 +572,7 @@ déclare chacune des douze capacités sous l'une de trois formes :
 - une **absence explicite** (`{"type": "absente", "raison": "..."}`), qui
   porte le message montré à l'utilisateur.
 
-### Les douze capacités
+### Les treize capacités
 
 | Capacité | France | Espagne | Forme (FR / ES) |
 |---|---|---|---|
@@ -588,12 +588,19 @@ déclare chacune des douze capacités sous l'une de trois formes :
 | `modele_appris` | Modèles Barrois/Jura/Lot/Dordogne/Ardèche (§5) | **absente** — scoring exploratoire seul | config / absente |
 | `fonds_carte` | Ortho IGN + SCAN25 (clé perso) + Plan IGN | Ortho PNOA + MTN raster + IGN Base (WMS INSPIRE) | config / config |
 | `points_eau_karstiques` | BD Topo (sources, pertes, résurgences) | **absente** | adaptateur / absente |
+| `couches_contexte` | **absente** — l'inventaire et la topo viennent déjà des paramètres | **absente** | absente / absente |
 
 Côté France, six capacités sont déclaratives (URL/couche/CRS suffisent) et six
 exigent un adaptateur en code : `mnt`, `geologie`, `obstacles_gouffres`,
 `vegetation_gouffres`, `affaissement_historique` et `points_eau_karstiques`.
 Côté Espagne, quatre sont déclaratives, deux sont des adaptateurs (le filtrage
-SIOSE des gouffres) et six sont absentes.
+SIOSE des gouffres) et sept sont absentes.
+
+`couches_contexte` est la seule capacité que ni la France ni l'Espagne ne
+déclarent : elle sert à un territoire qui dispose d'un inventaire karstique
+publié en service web, ce qui est le cas de la Wallonie (Atlas du Karst
+Wallon) et d'aucun des deux autres. Ses couches sont de la **donnée de
+contexte** — écrites dans le projet, lues à l'œil, jamais versées au score.
 
 Les six capacités absentes en Espagne portent un message qui explique, dans
 le journal d'exécution, ce qui n'est pas fait et pourquoi (ex. « Géorisques
