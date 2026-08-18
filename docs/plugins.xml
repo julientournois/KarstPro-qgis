@@ -1,26 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.17.1">
+    <pyqgis_plugin name="KarstPro" version="1.17.2">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
         <changelog><![CDATA[Corrigé :
-- Le pied de page des cartes imprimées créditait le mauvais producteur. La
-  mention « Fonds : IGN (licence ouverte) » était codée en dur : sur une carte
-  wallonne — fond CartoWeb du NGI belge, sites de l'Atlas du Karst Wallon —
-  elle attribuait les données à l'IGN français. Ce n'est pas une coquille de
-  présentation : l'AKWA est publié en CC-BY 4.0, une licence qui exige
-  l'attribution exacte. Une feuille imprimée qui se trompe ne la respecte pas.
-- L'attribution se compose désormais depuis les producteurs réellement posés
-  sur la feuille : chaque fond de carte et chaque couche de contexte déclare
-  son `credit` dans le JSON de son territoire, les doublons sont fondus, et un
-  fond non ajouté au projet (SCAN25 sans clé) n'est pas cité. Plus aucun nom de
-  producteur dans le code.
-- Sans crédit connu, aucune source n'est affirmée — se taire vaut mieux que
-  citer un producteur au hasard, ce qui était précisément le défaut.]]></changelog>
-        <create_date>2026-08-18T19:26:33.172718+00:00</create_date>
+- QGIS mourait pendant une préparation espagnole. Signalé sur Ségovie : une
+  *access violation* Windows dans `proj_create`, sans exception Python ni ligne
+  dans le journal — le processus disparaît. En cause, `pyproj.Transformer`, qui
+  n'est pas thread-safe dans QGIS. Ce piège était déjà contourné dans six
+  chemins du plugin, mais les trois modules espagnols avaient été oubliés à
+  chaque passe : ils ne s'exécutent jamais en France.
+- Nouveau module `core/projection.py` : transverse Mercator direct et inverse en
+  Python pur, bibliothèque standard seule. Écart mesuré contre pyproj hors
+  QGIS : 1,9 mm au pire point d'Espagne, 1 cm sur un changement de zone UTM.
+- Les deux mises en page imprimables avaient disparu de tous les projets
+  générés par la 1.17.1. Un nom non passé (`couches_contexte`) déclenchait un
+  `NameError` dans un bloc protégé par `except Exception` : la préparation
+  réussissait, aucune vérification n'échouait, et les feuilles n'existaient
+  plus. Trouvé en lisant le journal d'une préparation lancée pour autre chose.
+
+Note :
+- Deux garde-fous ajoutés, tous deux mis en échec sur le vrai défaut avant
+  d'être déclarés bons : un test interdisant tout import de `pyproj` dans le
+  plugin, et une analyse `ruff --select F821` qui refuse les noms indéfinis, y
+  compris dans une branche jamais exécutée par les tests.
+- Nouveau smoke test `run_package_layouts.py` : il part de GeoDataFrames et
+  vérifie qu'un packaging réel écrit bien ses deux feuilles et son attribution,
+  pour les trois pays. `run_mise_en_page.py` inspectait un projet déjà écrit —
+  il ne disait rien du chemin qui l'écrit.]]></changelog>
+        <create_date>2026-08-18T21:17:29.421099+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.17.1/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.17.2/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -31,8 +42,8 @@
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-08-18T19:26:33.172718+00:00</update_date>
+        <update_date>2026-08-18T21:17:29.421099+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.17.1</version>
+        <version>1.17.2</version>
     </pyqgis_plugin>
 </plugins>

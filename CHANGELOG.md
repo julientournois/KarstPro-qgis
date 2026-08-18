@@ -3,6 +3,34 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.17.2] — 2026-08-18
+
+### Corrigé
+- **QGIS mourait pendant une préparation espagnole.** Signalé sur Ségovie : une
+  *access violation* Windows dans `proj_create`, sans exception Python ni ligne
+  dans le journal — le processus disparaît. En cause, `pyproj.Transformer`, qui
+  n'est pas thread-safe dans QGIS. Ce piège était déjà contourné dans six
+  chemins du plugin, mais **les trois modules espagnols avaient été oubliés à
+  chaque passe** : ils ne s'exécutent jamais en France.
+- Nouveau module `core/projection.py` : transverse Mercator direct et inverse en
+  Python pur, bibliothèque standard seule. Écart mesuré contre pyproj hors
+  QGIS : 1,9 mm au pire point d'Espagne, 1 cm sur un changement de zone UTM.
+- **Les deux mises en page imprimables avaient disparu de tous les projets**
+  générés par la 1.17.1. Un nom non passé (`couches_contexte`) déclenchait un
+  `NameError` dans un bloc protégé par `except Exception` : la préparation
+  réussissait, aucune vérification n'échouait, et les feuilles n'existaient
+  plus. Trouvé en lisant le journal d'une préparation lancée pour autre chose.
+
+### Note
+- Deux garde-fous ajoutés, tous deux **mis en échec sur le vrai défaut avant
+  d'être déclarés bons** : un test interdisant tout import de `pyproj` dans le
+  plugin, et une analyse `ruff --select F821` qui refuse les noms indéfinis, y
+  compris dans une branche jamais exécutée par les tests.
+- Nouveau smoke test `run_package_layouts.py` : il part de GeoDataFrames et
+  vérifie qu'un packaging réel écrit bien ses deux feuilles et son attribution,
+  pour les trois pays. `run_mise_en_page.py` inspectait un projet déjà écrit —
+  il ne disait rien du chemin qui l'écrit.
+
 ## [1.17.1] — 2026-08-18
 
 ### Corrigé
