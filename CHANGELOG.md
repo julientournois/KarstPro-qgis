@@ -3,6 +3,23 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.17.1] — 2026-08-18
+
+### Corrigé
+- **Le pied de page des cartes imprimées créditait le mauvais producteur.** La
+  mention « Fonds : IGN (licence ouverte) » était codée en dur : sur une carte
+  wallonne — fond CartoWeb du NGI belge, sites de l'Atlas du Karst Wallon —
+  elle attribuait les données à l'IGN français. Ce n'est pas une coquille de
+  présentation : **l'AKWA est publié en CC-BY 4.0, une licence qui exige
+  l'attribution exacte.** Une feuille imprimée qui se trompe ne la respecte pas.
+- L'attribution se compose désormais depuis les producteurs **réellement posés
+  sur la feuille** : chaque fond de carte et chaque couche de contexte déclare
+  son `credit` dans le JSON de son territoire, les doublons sont fondus, et un
+  fond non ajouté au projet (SCAN25 sans clé) n'est pas cité. Plus aucun nom de
+  producteur dans le code.
+- Sans crédit connu, aucune source n'est affirmée — se taire vaut mieux que
+  citer un producteur au hasard, ce qui était précisément le défaut.
+
 ## [1.17.0] — 2026-08-11
 
 ### Ajouté
