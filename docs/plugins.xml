@@ -1,37 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.17.2">
+    <pyqgis_plugin name="KarstPro" version="1.18.0">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
-        <changelog><![CDATA[Corrigé :
-- QGIS mourait pendant une préparation espagnole. Signalé sur Ségovie : une
-  *access violation* Windows dans `proj_create`, sans exception Python ni ligne
-  dans le journal — le processus disparaît. En cause, `pyproj.Transformer`, qui
-  n'est pas thread-safe dans QGIS. Ce piège était déjà contourné dans six
-  chemins du plugin, mais les trois modules espagnols avaient été oubliés à
-  chaque passe : ils ne s'exécutent jamais en France.
-- Nouveau module `core/projection.py` : transverse Mercator direct et inverse en
-  Python pur, bibliothèque standard seule. Écart mesuré contre pyproj hors
-  QGIS : 1,9 mm au pire point d'Espagne, 1 cm sur un changement de zone UTM.
+        <changelog><![CDATA[Modifié :
+- La préparation s'exécute désormais dans un processus séparé. Changement
+  d'architecture d'exécution, motivé par un plantage : construire un CRS
+  `pyproj` dans un second `QgsTask` tue le processus QGIS — access
+  violation dans `proj_create`, sans exception Python ni ligne de journal.
+  Reproduit hors de KarstPro sur les trois versions testées (3.40.4, 4.0.2,
+  4.2.0). Relancer une préparation dans la même session suffisait à tout
+  perdre, quel que soit le pays. Un processus neuf n'a qu'un thread : la
+  classe entière de plantages disparaît au lieu d'être contenue.
+- Effet de bord bienvenu : un incident tue désormais l'enfant, pas QGIS.
+  On perd une préparation, pas sa session de travail, et l'erreur remonte avec
+  son traceback complet au lieu d'une fenêtre qui disparaît.
+- La barre de progression et le journal transitent par la sortie du processus
+  enfant. Rien ne change à l'usage.
+
+Corrigé :
+- Le crash pyproj espagnol signalé sur Ségovie : les trois modules
+  espagnols (`lidar_pnoa_auto`, `landcover_siose`, `mdt_wcs_es`) appelaient
+  encore `pyproj.Transformer`, oublié par six purges successives parce qu'il ne
+  s'exécute jamais en France. Reprojections UTM en Python pur désormais
+  (`core/projection.py`), écart mesuré contre pyproj : 1,9 mm.
 - Les deux mises en page imprimables avaient disparu de tous les projets
-  générés par la 1.17.1. Un nom non passé (`couches_contexte`) déclenchait un
-  `NameError` dans un bloc protégé par `except Exception` : la préparation
-  réussissait, aucune vérification n'échouait, et les feuilles n'existaient
-  plus. Trouvé en lisant le journal d'une préparation lancée pour autre chose.
+  générés par la 1.17.1 — un nom non passé dans un bloc protégé par
+  `except Exception` : la préparation réussissait, aucun test n'échouait.
+
+Ajouté :
+- Quatre garde-fous, tous mis en échec sur le vrai défaut avant d'être
+  déclarés bons : interdiction d'importer `pyproj` dans le plugin, analyse
+  `ruff --select F821` des noms indéfinis, contrat `ContexteEtude.crs`
+  exécutoire, et le `PYTHONPATH` de l'enfant comparé au `sys.path` du parent.
+- Trois smoke tests par pays : contrat des territoires (capacité par
+  capacité, fonds validés par rendu réel), pipeline complet (deux passes
+  dans le même processus, pour reproduire le plantage), et pipeline rapide
+  (MNT fabriqué, 4 à 9 secondes, sans réseau ni LiDAR).
 
 Note :
-- Deux garde-fous ajoutés, tous deux mis en échec sur le vrai défaut avant
-  d'être déclarés bons : un test interdisant tout import de `pyproj` dans le
-  plugin, et une analyse `ruff --select F821` qui refuse les noms indéfinis, y
-  compris dans une branche jamais exécutée par les tests.
-- Nouveau smoke test `run_package_layouts.py` : il part de GeoDataFrames et
-  vérifie qu'un packaging réel écrit bien ses deux feuilles et son attribution,
-  pour les trois pays. `run_mise_en_page.py` inspectait un projet déjà écrit —
-  il ne disait rien du chemin qui l'écrit.]]></changelog>
-        <create_date>2026-08-18T21:17:29.421099+00:00</create_date>
+- Aucun test du dépôt ne traversait le code spécifique à un pays : c'est ce qui
+  a laissé le piège `pyproj` survivre six purges dans les modules espagnols, et
+  ce que les trois smoke tests ci-dessus corrigent.]]></changelog>
+        <create_date>2026-08-21T12:58:21.691907+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.17.2/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.18.0/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -42,8 +56,8 @@ Note :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-08-18T21:17:29.421099+00:00</update_date>
+        <update_date>2026-08-21T12:58:21.691907+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.17.2</version>
+        <version>1.18.0</version>
     </pyqgis_plugin>
 </plugins>

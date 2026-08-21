@@ -3,6 +3,48 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.18.0] — 2026-08-21
+
+### Modifié
+- **La préparation s'exécute désormais dans un processus séparé.** Changement
+  d'architecture d'exécution, motivé par un plantage : construire un CRS
+  `pyproj` dans un **second** `QgsTask` tue le processus QGIS — access
+  violation dans `proj_create`, sans exception Python ni ligne de journal.
+  Reproduit hors de KarstPro sur les trois versions testées (3.40.4, 4.0.2,
+  4.2.0). **Relancer une préparation dans la même session suffisait à tout
+  perdre**, quel que soit le pays. Un processus neuf n'a qu'un thread : la
+  classe entière de plantages disparaît au lieu d'être contenue.
+- Effet de bord bienvenu : **un incident tue désormais l'enfant, pas QGIS.**
+  On perd une préparation, pas sa session de travail, et l'erreur remonte avec
+  son traceback complet au lieu d'une fenêtre qui disparaît.
+- La barre de progression et le journal transitent par la sortie du processus
+  enfant. Rien ne change à l'usage.
+
+### Corrigé
+- **Le crash pyproj espagnol** signalé sur Ségovie : les trois modules
+  espagnols (`lidar_pnoa_auto`, `landcover_siose`, `mdt_wcs_es`) appelaient
+  encore `pyproj.Transformer`, oublié par six purges successives parce qu'il ne
+  s'exécute jamais en France. Reprojections UTM en Python pur désormais
+  (`core/projection.py`), écart mesuré contre pyproj : 1,9 mm.
+- **Les deux mises en page imprimables avaient disparu** de tous les projets
+  générés par la 1.17.1 — un nom non passé dans un bloc protégé par
+  `except Exception` : la préparation réussissait, aucun test n'échouait.
+
+### Ajouté
+- Quatre garde-fous, **tous mis en échec sur le vrai défaut avant d'être
+  déclarés bons** : interdiction d'importer `pyproj` dans le plugin, analyse
+  `ruff --select F821` des noms indéfinis, contrat `ContexteEtude.crs`
+  exécutoire, et le `PYTHONPATH` de l'enfant comparé au `sys.path` du parent.
+- Trois smoke tests par pays : **contrat des territoires** (capacité par
+  capacité, fonds validés par rendu réel), **pipeline complet** (deux passes
+  dans le même processus, pour reproduire le plantage), et **pipeline rapide**
+  (MNT fabriqué, 4 à 9 secondes, sans réseau ni LiDAR).
+
+### Note
+- Aucun test du dépôt ne traversait le code spécifique à un pays : c'est ce qui
+  a laissé le piège `pyproj` survivre six purges dans les modules espagnols, et
+  ce que les trois smoke tests ci-dessus corrigent.
+
 ## [1.17.2] — 2026-08-18
 
 ### Corrigé

@@ -1,6 +1,6 @@
 # KarstPro — Document technique : critères, seuils, outils, modèles
 
-**Version : 1.17.2**
+**Version : 1.18.0**
 
 > Annexe optionnelle au guide d'utilisation (`KarstPro_Documentation.pdf`,
 > fourni à côté de ce fichier) : le détail complet de
@@ -54,9 +54,18 @@ scoring estime une probabilité d'intérêt. Le document traite les deux.
 - **Aucune dépendance scikit-learn** n'est requise pour faire tourner le plugin :
   le modèle appris est sérialisé en JSON (coefficients + scaler) et l'inférence
   est du pur `numpy`.
-- **`pyproj` est volontairement évité** dans les threads de traitement (non
-  thread-safe sur QGIS 4.0.2 → access violation) : conversions L93↔WGS84 en pur
-  Python, lectures GeoPackage en SQL direct.
+- **La préparation s'exécute dans un processus séparé** (depuis la 1.18.0).
+  Construire un CRS `pyproj` dans un **second** `QgsTask` tue le processus QGIS
+  — access violation dans `proj_create`, sans exception Python. Reproduit sans
+  KarstPro sur QGIS 3.40.4, 4.0.2 et 4.2.0 : relancer une préparation dans la
+  même session suffisait. Un processus neuf n'a qu'un thread, ce qui supprime
+  la classe entière de plantages au lieu de la contenir. Effet de bord
+  bienvenu : un incident tue l'enfant, pas QGIS — on perd une préparation, pas
+  sa session de travail.
+- **`pyproj` reste évité** dans les threads de traitement, pour les quatre
+  autres algorithmes qui, eux, tournent toujours dans QGIS : conversions
+  L93↔WGS84 en pur Python, lectures GeoPackage en SQL direct, et les objets CRS
+  préchargés hors thread (`core/crs_thread.py`).
 
 ---
 
