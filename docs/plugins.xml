@@ -1,51 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.18.0">
+    <pyqgis_plugin name="KarstPro" version="1.18.1">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
-        <changelog><![CDATA[Modifié :
-- La préparation s'exécute désormais dans un processus séparé. Changement
-  d'architecture d'exécution, motivé par un plantage : construire un CRS
-  `pyproj` dans un second `QgsTask` tue le processus QGIS — access
-  violation dans `proj_create`, sans exception Python ni ligne de journal.
-  Reproduit hors de KarstPro sur les trois versions testées (3.40.4, 4.0.2,
-  4.2.0). Relancer une préparation dans la même session suffisait à tout
-  perdre, quel que soit le pays. Un processus neuf n'a qu'un thread : la
-  classe entière de plantages disparaît au lieu d'être contenue.
-- Effet de bord bienvenu : un incident tue désormais l'enfant, pas QGIS.
-  On perd une préparation, pas sa session de travail, et l'erreur remonte avec
-  son traceback complet au lieu d'une fenêtre qui disparaît.
-- La barre de progression et le journal transitent par la sortie du processus
-  enfant. Rien ne change à l'usage.
-
-Corrigé :
-- Le crash pyproj espagnol signalé sur Ségovie : les trois modules
-  espagnols (`lidar_pnoa_auto`, `landcover_siose`, `mdt_wcs_es`) appelaient
-  encore `pyproj.Transformer`, oublié par six purges successives parce qu'il ne
-  s'exécute jamais en France. Reprojections UTM en Python pur désormais
-  (`core/projection.py`), écart mesuré contre pyproj : 1,9 mm.
-- Les deux mises en page imprimables avaient disparu de tous les projets
-  générés par la 1.17.1 — un nom non passé dans un bloc protégé par
-  `except Exception` : la préparation réussissait, aucun test n'échouait.
-
-Ajouté :
-- Quatre garde-fous, tous mis en échec sur le vrai défaut avant d'être
-  déclarés bons : interdiction d'importer `pyproj` dans le plugin, analyse
-  `ruff --select F821` des noms indéfinis, contrat `ContexteEtude.crs`
-  exécutoire, et le `PYTHONPATH` de l'enfant comparé au `sys.path` du parent.
-- Trois smoke tests par pays : contrat des territoires (capacité par
-  capacité, fonds validés par rendu réel), pipeline complet (deux passes
-  dans le même processus, pour reproduire le plantage), et pipeline rapide
-  (MNT fabriqué, 4 à 9 secondes, sans réseau ni LiDAR).
+        <changelog><![CDATA[Corrigé :
+- Un échec de préparation masquait sa propre cause. Quand l'algorithme
+  signale une erreur métier et s'arrête sans lever d'exception, le processus
+  enfant remontait « la préparation a rendu un échec sans exception » — alors
+  que le motif était parfaitement connu. Constaté sur « Aucune dalle LiDAR HD
+  IGN trouvée pour la bbox », message qui disait exactement quoi corriger et
+  que l'enveloppe effaçait. Le motif réel remonte désormais tel quel.
+- Le test qui interdit les noms indéfinis faisait échouer l'intégration
+  continue quand `ruff` n'y était pas installé : `python -m ruff` sans ruff
+  sort en code 1, exactement comme un ruff qui a trouvé des violations. Un
+  test qui crie au loup est pire qu'un test absent. `ruff` rejoint par
+  ailleurs les dépendances de développement, faute de quoi le garde-fou se
+  serait sauté en silence — sans rien protéger.
 
 Note :
-- Aucun test du dépôt ne traversait le code spécifique à un pays : c'est ce qui
-  a laissé le piège `pyproj` survivre six purges dans les modules espagnols, et
-  ce que les trois smoke tests ci-dessus corrigent.]]></changelog>
-        <create_date>2026-08-21T12:58:21.691907+00:00</create_date>
+- Les trois territoires sont validés depuis l'interface sur cette
+  architecture : Marnaval (France, LiDAR HD IGN), Ségovie (Espagne, PNOA) et
+  Rochefort (Wallonie, MNT fourni). Ségovie rend 591 dolines, 44 P1, 245 P2,
+  219 P3 — chiffres identiques à ceux d'avant le passage en sous-processus.]]></changelog>
+        <create_date>2026-08-21T13:54:46.534773+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.18.0/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.18.1/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -56,8 +36,8 @@ Note :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-08-21T12:58:21.691907+00:00</update_date>
+        <update_date>2026-08-21T13:54:46.534773+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.18.0</version>
+        <version>1.18.1</version>
     </pyqgis_plugin>
 </plugins>

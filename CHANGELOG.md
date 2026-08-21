@@ -3,6 +3,28 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.18.1] — 2026-08-21
+
+### Corrigé
+- **Un échec de préparation masquait sa propre cause.** Quand l'algorithme
+  signale une erreur métier et s'arrête sans lever d'exception, le processus
+  enfant remontait « la préparation a rendu un échec sans exception » — alors
+  que le motif était parfaitement connu. Constaté sur « Aucune dalle LiDAR HD
+  IGN trouvée pour la bbox », message qui disait exactement quoi corriger et
+  que l'enveloppe effaçait. Le motif réel remonte désormais tel quel.
+- Le test qui interdit les noms indéfinis **faisait échouer l'intégration
+  continue** quand `ruff` n'y était pas installé : `python -m ruff` sans ruff
+  sort en code 1, exactement comme un ruff qui a trouvé des violations. Un
+  test qui crie au loup est pire qu'un test absent. `ruff` rejoint par
+  ailleurs les dépendances de développement, faute de quoi le garde-fou se
+  serait sauté en silence — sans rien protéger.
+
+### Note
+- Les trois territoires sont validés depuis l'interface sur cette
+  architecture : Marnaval (France, LiDAR HD IGN), Ségovie (Espagne, PNOA) et
+  Rochefort (Wallonie, MNT fourni). Ségovie rend **591 dolines, 44 P1, 245 P2,
+  219 P3** — chiffres identiques à ceux d'avant le passage en sous-processus.
+
 ## [1.18.0] — 2026-08-21
 
 ### Modifié
