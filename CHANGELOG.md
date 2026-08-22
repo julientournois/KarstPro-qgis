@@ -3,6 +3,48 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.18.2] — 2026-08-22
+
+### Corrigé
+- **Une topo volumineuse faisait planter la préparation.** Signalé par un
+  utilisateur qui fournissait sa topographie en shapefile. Le format n'y était
+  pour rien : la colonne `comp_in_couloir` construisait le tampon de 500 m
+  autour de **l'union de toutes les visées**, dont le coût explose avec le
+  nombre d'entités. Mesuré : 0,16 s à 261 visées, **75 s à 2 000**, et
+  `GEOSException: bad allocation` à 10 000. Un KML de topo arrive en un seul
+  MultiPolygon (261 parties) ; un shapefile exporté par un logiciel de topo
+  porte **une entité par visée** — 65 859 dans le fichier de l'utilisateur,
+  pour 343 km de développement. Le tampon est remplacé par un seuil sur la
+  distance au passage le plus proche, déjà calculée : même résultat, plus
+  d'union ni de tampon.
+- **Les cibles ignoraient la cavité connue de leur doline.** Le rapprochement
+  avec l'inventaire fonctionnait, mais seule la doline le savait — sur le
+  terrain on marche vers la cible, pas vers le polygone, et on allait vérifier
+  une cavité déjà explorée sans le savoir. Les cinq colonnes `cavite_*` sont
+  désormais portées par la cible. Sur l'étude de l'utilisateur : **178 cibles
+  P1 sur 1 690** sont sur une cavité déjà cataloguée.
+- **Une panne de service tuait une préparation de dix-sept minutes.** La
+  dégradation était prévue — le message « scoring géologique dégradé » existe —
+  mais ne rattrapait que l'absence de données, jamais une exception. Constaté
+  pendant une panne réelle du service géologie wallon.
+- Un échec de préparation masquait sa propre cause : le processus enfant
+  remontait « échec sans exception » alors que le motif était connu.
+- Le test des noms indéfinis faisait échouer l'intégration continue quand
+  `ruff` n'y était pas installé.
+
+### Modifié
+- **Distance au réseau topographié : 241 s → 0,1 s.** L'ancienne boucle
+  interrogeait l'index spatial sur une fenêtre de 5 km, qui ramène presque tout
+  le réseau sur un système étendu. `sindex.nearest` fait le même calcul en
+  O(log n) — vérifié sur la topo réelle de l'utilisateur, résultat identique.
+  Le scoring complet de son étude (10 742 dolines, 65 859 visées) passe d'un
+  plantage à **4,9 s**.
+
+### Note
+- La documentation décrivait `comp_in_couloir` par un tampon qui n'existe plus.
+- Les priorités sont rigoureusement identiques avec et sans topographie, ce qui
+  confirme la conception : la topo est informative, hors score.
+
 ## [1.18.1] — 2026-08-21
 
 ### Corrigé
