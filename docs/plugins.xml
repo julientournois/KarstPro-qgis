@@ -1,51 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.18.2">
+    <pyqgis_plugin name="KarstPro" version="1.18.3">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
         <changelog><![CDATA[Corrigé :
-- Une topo volumineuse faisait planter la préparation. Signalé par un
-  utilisateur qui fournissait sa topographie en shapefile. Le format n'y était
-  pour rien : la colonne `comp_in_couloir` construisait le tampon de 500 m
-  autour de l'union de toutes les visées, dont le coût explose avec le
-  nombre d'entités. Mesuré : 0,16 s à 261 visées, 75 s à 2 000, et
-  `GEOSException: bad allocation` à 10 000. Un KML de topo arrive en un seul
-  MultiPolygon (261 parties) ; un shapefile exporté par un logiciel de topo
-  porte une entité par visée — 65 859 dans le fichier de l'utilisateur,
-  pour 343 km de développement. Le tampon est remplacé par un seuil sur la
-  distance au passage le plus proche, déjà calculée : même résultat, plus
-  d'union ni de tampon.
-- Les cibles ignoraient la cavité connue de leur doline. Le rapprochement
-  avec l'inventaire fonctionnait, mais seule la doline le savait — sur le
-  terrain on marche vers la cible, pas vers le polygone, et on allait vérifier
-  une cavité déjà explorée sans le savoir. Les cinq colonnes `cavite_*` sont
-  désormais portées par la cible. Sur l'étude de l'utilisateur : 178 cibles
-  P1 sur 1 690 sont sur une cavité déjà cataloguée.
-- Une panne de service tuait une préparation de dix-sept minutes. La
-  dégradation était prévue — le message « scoring géologique dégradé » existe —
-  mais ne rattrapait que l'absence de données, jamais une exception. Constaté
-  pendant une panne réelle du service géologie wallon.
-- Un échec de préparation masquait sa propre cause : le processus enfant
-  remontait « échec sans exception » alors que le motif était connu.
-- Le test des noms indéfinis faisait échouer l'intégration continue quand
-  `ruff` n'y était pas installé.
+- Les accents étaient corrompus en silence entre la préparation et QGIS.
+  La préparation tourne dans un processus séparé depuis la 1.18.0. Le parent
+  lit la sortie de l'enfant en UTF-8 ; l'enfant, lui, écrivait avec la page de
+  code ANSI de Windows (cp1252), faute de `PYTHONIOENCODING`. Tout caractère
+  accentué revenait en `U+FFFD` — y compris les chemins de sortie rendus en
+  fin de traitement et les messages d'erreur. Un utilisateur dont le dossier
+  d'étude contient un accent recevait donc un chemin faux, sans qu'aucune
+  erreur ne soit levée : la lecture tolérante (`errors="replace"`) rendait la
+  corruption parfaitement muette. `environnement_enfant()` impose désormais
+  l'UTF-8 à l'enfant.
 
-Modifié :
-- Distance au réseau topographié : 241 s → 0,1 s. L'ancienne boucle
-  interrogeait l'index spatial sur une fenêtre de 5 km, qui ramène presque tout
-  le réseau sur un système étendu. `sindex.nearest` fait le même calcul en
-  O(log n) — vérifié sur la topo réelle de l'utilisateur, résultat identique.
-  Le scoring complet de son étude (10 742 dolines, 65 859 visées) passe d'un
-  plantage à 4,9 s.
-
-Note :
-- La documentation décrivait `comp_in_couloir` par un tampon qui n'existe plus.
-- Les priorités sont rigoureusement identiques avec et sans topographie, ce qui
-  confirme la conception : la topo est informative, hors score.]]></changelog>
-        <create_date>2026-08-22T12:01:30.471409+00:00</create_date>
+Documentation :
+- ROADMAP — la priorité n°1 désignait un échantillon de validation terrain
+  (Bayard) qui n'a pas pu être tiré. Remplacée par les deux échantillons
+  réellement disponibles, Beurey et Marnaval, avec leurs populations, et la
+  condition « évaluateur qui n'a jamais vu les cartes » rendue explicite.
+- ROADMAP, P9 — consigne un défaut avéré : le bloc `seuils_priorite` de
+  `config/default_scoring.json` (rouge 55 / orange 35 / jaune 25) n'est lu
+  par aucun code ; les trois seuils sont écrits en dur. Comme la
+  documentation technique livrée reproduit ce fichier intégralement, elle
+  présente comme réglable un paramètre sans effet. Le correctif est cadré mais
+  volontairement placé derrière la validation terrain. En attendant, le
+  paramètre *Config scoring JSON* de l'interface permet bien d'agir sur le
+  volume de cibles, via les poids du bloc A.]]></changelog>
+        <create_date>2026-08-23T11:58:17.642878+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.18.2/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.18.3/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -56,8 +42,8 @@ Note :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-08-22T12:01:30.471409+00:00</update_date>
+        <update_date>2026-08-23T11:58:17.642878+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.18.2</version>
+        <version>1.18.3</version>
     </pyqgis_plugin>
 </plugins>

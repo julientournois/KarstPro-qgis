@@ -3,6 +3,34 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.18.3] — 2026-08-23
+
+### Corrigé
+- **Les accents étaient corrompus en silence entre la préparation et QGIS.**
+  La préparation tourne dans un processus séparé depuis la 1.18.0. Le parent
+  lit la sortie de l'enfant en UTF-8 ; l'enfant, lui, écrivait avec la page de
+  code ANSI de Windows (cp1252), faute de `PYTHONIOENCODING`. Tout caractère
+  accentué revenait en `U+FFFD` — **y compris les chemins de sortie rendus en
+  fin de traitement et les messages d'erreur**. Un utilisateur dont le dossier
+  d'étude contient un accent recevait donc un chemin faux, sans qu'aucune
+  erreur ne soit levée : la lecture tolérante (`errors="replace"`) rendait la
+  corruption parfaitement muette. `environnement_enfant()` impose désormais
+  l'UTF-8 à l'enfant.
+
+### Documentation
+- **ROADMAP** — la priorité n°1 désignait un échantillon de validation terrain
+  (Bayard) qui n'a pas pu être tiré. Remplacée par les deux échantillons
+  réellement disponibles, Beurey et Marnaval, avec leurs populations, et la
+  condition « évaluateur qui n'a jamais vu les cartes » rendue explicite.
+- **ROADMAP, P9** — consigne un défaut avéré : le bloc `seuils_priorite` de
+  `config/default_scoring.json` (rouge 55 / orange 35 / jaune 25) **n'est lu
+  par aucun code** ; les trois seuils sont écrits en dur. Comme la
+  documentation technique livrée reproduit ce fichier intégralement, elle
+  présente comme réglable un paramètre sans effet. Le correctif est cadré mais
+  volontairement placé **derrière la validation terrain**. En attendant, le
+  paramètre *Config scoring JSON* de l'interface permet bien d'agir sur le
+  volume de cibles, via les **poids** du bloc A.
+
 ## [1.18.2] — 2026-08-22
 
 ### Corrigé
