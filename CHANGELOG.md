@@ -3,6 +3,20 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.18.5] — 2026-08-23
+
+### Corrigé
+- **Un paramètre facultatif laissé vide était transmis comme un fichier nommé
+  « NULL ».** Depuis la 1.18.0, la préparation transmet ses paramètres au
+  processus de calcul ; un champ optionnel non renseigné y devenait la chaîne
+  littérale `NULL`, que le programme interprétait ensuite comme un vrai chemin
+  de fichier. Conséquences observées chez un utilisateur : la préparation
+  échouait à l'étape 6 après trois minutes de calcul (`Config scoring JSON`
+  laissé vide), et le journal affichait « Import géologie locale : NULL » avant
+  de basculer silencieusement sur le service de repli. Un champ vide reste
+  désormais vide. Trois paramètres étaient touchés : *Config scoring JSON*,
+  *Géologie locale* et *Traçages*.
+
 ## [1.18.4] — 2026-08-23
 
 ### Ajouté
