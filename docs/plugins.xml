@@ -1,37 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.18.3">
+    <pyqgis_plugin name="KarstPro" version="1.18.4">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
-        <changelog><![CDATA[Corrigé :
-- Les accents étaient corrompus en silence entre la préparation et QGIS.
-  La préparation tourne dans un processus séparé depuis la 1.18.0. Le parent
-  lit la sortie de l'enfant en UTF-8 ; l'enfant, lui, écrivait avec la page de
-  code ANSI de Windows (cp1252), faute de `PYTHONIOENCODING`. Tout caractère
-  accentué revenait en `U+FFFD` — y compris les chemins de sortie rendus en
-  fin de traitement et les messages d'erreur. Un utilisateur dont le dossier
-  d'étude contient un accent recevait donc un chemin faux, sans qu'aucune
-  erreur ne soit levée : la lecture tolérante (`errors="replace"`) rendait la
-  corruption parfaitement muette. `environnement_enfant()` impose désormais
-  l'UTF-8 à l'enfant.
+        <changelog><![CDATA[Ajouté :
+- La version de KarstPro figure enfin dans l'en-tête du journal. Il donnait
+  QGIS, Qt, Python et GDAL — mais pas le plugin. Trois journaux d'un
+  utilisateur reçus le 2026-08-23 se coupaient en pleine étape sans message
+  d'erreur, et il était impossible de dire s'ils venaient d'une version
+  antérieure à la 1.18.0, où une deuxième préparation dans la même session
+  QGIS pouvait mourir sans un mot. Toute remontée future part désormais avec
+  cette information.
+- L'étape RGE ALTI annonce chaque tuile, et l'hydrologie ses trois passes
+  WhiteboxTools. Ces étapes affichaient une ligne puis restaient muettes
+  plusieurs minutes : « ça travaille » et « c'est bloqué » étaient
+  indiscernables.
 
-Documentation :
-- ROADMAP — la priorité n°1 désignait un échantillon de validation terrain
-  (Bayard) qui n'a pas pu être tiré. Remplacée par les deux échantillons
-  réellement disponibles, Beurey et Marnaval, avec leurs populations, et la
-  condition « évaluateur qui n'a jamais vu les cartes » rendue explicite.
-- ROADMAP, P9 — consigne un défaut avéré : le bloc `seuils_priorite` de
-  `config/default_scoring.json` (rouge 55 / orange 35 / jaune 25) n'est lu
-  par aucun code ; les trois seuils sont écrits en dur. Comme la
-  documentation technique livrée reproduit ce fichier intégralement, elle
-  présente comme réglable un paramètre sans effet. Le correctif est cadré mais
-  volontairement placé derrière la validation terrain. En attendant, le
-  paramètre *Config scoring JSON* de l'interface permet bien d'agir sur le
-  volume de cibles, via les poids du bloc A.]]></changelog>
-        <create_date>2026-08-23T11:58:17.642878+00:00</create_date>
+Corrigé :
+- Une préparation pouvait se figer définitivement, sans message ni
+  consommation processeur. C'est la cause réelle des trois préparations
+  bloquées signalées le 2026-08-23, et elle touche toutes les versions
+  depuis la 1.18.0, tous pays confondus. Depuis que la préparation tourne
+  dans un processus séparé, QGIS lisait sa sortie standard jusqu'au bout avant
+  de lire seulement ensuite sa sortie d'erreur. Dès que celle-ci dépassait la
+  capacité du tube du système (environ 64 Ko), le processus de préparation se
+  bloquait en écriture ; plus rien ne sortait, et QGIS attendait indéfiniment
+  une suite qui ne viendrait jamais. PDAL, WhiteboxTools et GDAL atteignent ce
+  volume sans peine sur un secteur réel — ce qui explique pourquoi le blocage
+  survenait à des étapes différentes selon les études. Les deux sorties sont
+  désormais lues en parallèle. Mesuré : 200 Ko d'erreurs bloquaient
+  indéfiniment, ils passent maintenant en 0,1 s.
+- Un échec de préparation n'apparaissait pas dans le fichier journal.
+  Il s'affichait dans la fenêtre QGIS, mais le `.log` — le seul fichier qu'un
+  utilisateur transmet pour un diagnostic — s'arrêtait en pleine étape sans
+  rien indiquer. La cause est maintenant écrite dans le journal avant que
+  l'erreur ne remonte.
+- Le téléchargement RGE ALTI pouvait ne jamais s'arrêter. Le délai
+  d'attente configuré porte sur chaque opération réseau élémentaire, pas sur
+  la durée totale : un service qui répond au compte-gouttes ne le déclenche
+  jamais, et la récupération d'une tuile de 24 Mo pouvait durer indéfiniment
+  sans lever d'erreur — donc sans que le repli prévu pour les pannes ne serve
+  à rien. Deux budgets de durée ont été ajoutés (3 min par tuile, 15 min au
+  total) ; au-delà, la tuile est abandonnée, l'utilisateur averti, et la
+  préparation continue avec une couverture partielle. Mesure de référence :
+  une tuile pleine revient en 15 s quand le service va bien.
+- Fuite de descripteurs à chaque préparation. Les tuyaux de sortie du
+  processus de préparation n'étaient jamais refermés : le ramasse-miettes s'en
+  chargeait plus tard, en écrivant un `ResourceWarning: unclosed file` dans le
+  journal QGIS à chaque exécution. Sans conséquence fonctionnelle, mais du
+  bruit permanent dans un journal qui sert justement à diagnostiquer.]]></changelog>
+        <create_date>2026-08-23T18:09:42.975999+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.18.3/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.18.4/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -42,8 +63,8 @@ Documentation :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-08-23T11:58:17.642878+00:00</update_date>
+        <update_date>2026-08-23T18:09:42.975999+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.18.3</version>
+        <version>1.18.4</version>
     </pyqgis_plugin>
 </plugins>

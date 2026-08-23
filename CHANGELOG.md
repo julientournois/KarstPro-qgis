@@ -3,6 +3,55 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.18.4] — 2026-08-23
+
+### Ajouté
+- **La version de KarstPro figure enfin dans l'en-tête du journal.** Il donnait
+  QGIS, Qt, Python et GDAL — mais pas le plugin. Trois journaux d'un
+  utilisateur reçus le 2026-08-23 se coupaient en pleine étape sans message
+  d'erreur, et il était impossible de dire s'ils venaient d'une version
+  antérieure à la 1.18.0, où une deuxième préparation dans la même session
+  QGIS pouvait mourir sans un mot. Toute remontée future part désormais avec
+  cette information.
+- **L'étape RGE ALTI annonce chaque tuile**, et l'hydrologie ses trois passes
+  WhiteboxTools. Ces étapes affichaient une ligne puis restaient muettes
+  plusieurs minutes : « ça travaille » et « c'est bloqué » étaient
+  indiscernables.
+
+### Corrigé
+- **Une préparation pouvait se figer définitivement, sans message ni
+  consommation processeur.** C'est la cause réelle des trois préparations
+  bloquées signalées le 2026-08-23, et elle touche **toutes les versions
+  depuis la 1.18.0**, tous pays confondus. Depuis que la préparation tourne
+  dans un processus séparé, QGIS lisait sa sortie standard jusqu'au bout avant
+  de lire seulement ensuite sa sortie d'erreur. Dès que celle-ci dépassait la
+  capacité du tube du système (environ 64 Ko), le processus de préparation se
+  bloquait en écriture ; plus rien ne sortait, et QGIS attendait indéfiniment
+  une suite qui ne viendrait jamais. PDAL, WhiteboxTools et GDAL atteignent ce
+  volume sans peine sur un secteur réel — ce qui explique pourquoi le blocage
+  survenait à des étapes différentes selon les études. Les deux sorties sont
+  désormais lues en parallèle. Mesuré : 200 Ko d'erreurs bloquaient
+  indéfiniment, ils passent maintenant en 0,1 s.
+- **Un échec de préparation n'apparaissait pas dans le fichier journal.**
+  Il s'affichait dans la fenêtre QGIS, mais le `.log` — le seul fichier qu'un
+  utilisateur transmet pour un diagnostic — s'arrêtait en pleine étape sans
+  rien indiquer. La cause est maintenant écrite dans le journal avant que
+  l'erreur ne remonte.
+- **Le téléchargement RGE ALTI pouvait ne jamais s'arrêter.** Le délai
+  d'attente configuré porte sur chaque opération réseau élémentaire, pas sur
+  la durée totale : un service qui répond au compte-gouttes ne le déclenche
+  jamais, et la récupération d'une tuile de 24 Mo pouvait durer indéfiniment
+  sans lever d'erreur — donc sans que le repli prévu pour les pannes ne serve
+  à rien. Deux budgets de durée ont été ajoutés (3 min par tuile, 15 min au
+  total) ; au-delà, la tuile est abandonnée, l'utilisateur averti, et la
+  préparation continue avec une couverture partielle. Mesure de référence :
+  une tuile pleine revient en 15 s quand le service va bien.
+- **Fuite de descripteurs à chaque préparation.** Les tuyaux de sortie du
+  processus de préparation n'étaient jamais refermés : le ramasse-miettes s'en
+  chargeait plus tard, en écrivant un `ResourceWarning: unclosed file` dans le
+  journal QGIS à chaque exécution. Sans conséquence fonctionnelle, mais du
+  bruit permanent dans un journal qui sert justement à diagnostiquer.
+
 ## [1.18.3] — 2026-08-23
 
 ### Corrigé
