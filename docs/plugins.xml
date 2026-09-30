@@ -1,23 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.18.5">
+    <pyqgis_plugin name="KarstPro" version="1.18.6">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
         <changelog><![CDATA[Corrigé :
-- Un paramètre facultatif laissé vide était transmis comme un fichier nommé
-  « NULL ». Depuis la 1.18.0, la préparation transmet ses paramètres au
-  processus de calcul ; un champ optionnel non renseigné y devenait la chaîne
-  littérale `NULL`, que le programme interprétait ensuite comme un vrai chemin
-  de fichier. Conséquences observées chez un utilisateur : la préparation
-  échouait à l'étape 6 après trois minutes de calcul (`Config scoring JSON`
-  laissé vide), et le journal affichait « Import géologie locale : NULL » avant
-  de basculer silencieusement sur le service de repli. Un champ vide reste
-  désormais vide. Trois paramètres étaient touchés : *Config scoring JSON*,
-  *Géologie locale* et *Traçages*.]]></changelog>
-        <create_date>2026-08-23T19:09:19.028195+00:00</create_date>
+- La préparation pouvait rester des dizaines de minutes sans le moindre
+  message, et le bouton « Annuler » y restait sans effet. Plusieurs étapes
+  — la fusion des dalles par PDAL, la recherche des dalles PNOA en Espagne —
+  ne signalaient rien entre leur début et leur fin. Le journal s'arrêtait donc
+  net en pleine étape : impossible, en le lisant, de distinguer un traitement
+  qui avance d'un traitement bloqué. Deux journaux d'utilisateur reçus le
+  2026-09-30 étaient illisibles pour cette seule raison. Pire, « Annuler »
+  n'était pris en compte qu'à l'arrivée d'un message : pendant une étape
+  muette, le bouton ne faisait rien et QGIS paraissait figé. La préparation
+  émet désormais, toutes les 30 secondes, une ligne nommant l'étape en cours
+  et le temps écoulé — ce qui rend aussi « Annuler » opérant.
+
+Ajouté :
+- La génération du MNT annonce le nombre de dalles et le volume à traiter,
+  et prévient que l'étape ne rend pas de progression.
+- Avertissement quand le dossier de sortie est synchronisé dans le nuage
+  (OneDrive, Dropbox, Google Drive, iCloud, Nextcloud…). Le dossier de travail
+  y reçoit plusieurs gigaoctets de dalles LiDAR : le client de synchronisation
+  les téléverse pendant que le calcul les lit, et l'option « fichiers à la
+  demande » peut les vider puis les retélécharger à chaque lecture — la
+  préparation paraît alors figée. Un dossier local est recommandé.
+- Dalles PNOA à récupérer à la main, quand le téléchargement automatique
+  échoue. KarstPro écrit la liste exacte des dalles manquantes dans
+  `lidar_work/laz/dalles_a_telecharger.txt` — lien du CNIG, dossier où les
+  déposer, noms à conserver — et le signale dans le journal. Les dalles
+  déposées à la main sont reprises telles quelles au lancement suivant. Cela
+  évite le repli 5 m, qui n'est pas une simple perte de précision : mesuré sur
+  deux études espagnoles réelles, il efface de 48 % à 93 % des dolines selon la
+  zone, et la totalité des gouffres (ils se lisent dans les trous de
+  NODATA du semis LiDAR, qu'un relief interpolé n'a pas).
+
+Connu :
+- Le téléchargement automatique des dalles PNOA 1 m n'est plus possible.
+  Le CNIG a placé son bouton de téléchargement derrière une vérification
+  anti-robot (reCAPTCHA v3) le 2026-09-29 à 12 h : la page demande un
+  jeton puis appelle `preAutorizarDescarga`, et sans ce jeton le serveur
+  répond « Error en el protocolo de descarga. No está autorizado ».
+  KarstPro ne contourne pas ce contrôle — c'est une mesure
+  d'anti-automatisation du fournisseur, et la respecter n'est pas négociable.
+  Ce n'est donc pas un défaut à corriger mais une contrainte durable.
+
+  Conséquences et contournements, tous en place :
+  - la préparation reconnaît ce refus, cesse d'essayer dès la première dalle
+    (au lieu de rejouer l'échec 35 fois) et en nomme la cause dans le journal ;
+  - la liste `dalles_a_telecharger.txt` décrit la voie officielle groupée —
+    panier du CNIG, « Descarga automática », fichier `.jnlp` ouvert avec Open
+    Web Start, en indiquant `lidar_work/laz/` comme dossier de destination —
+    et donne en repli un lien de fiche par dalle ;
+  - les dalles ainsi récupérées sont reprises telles quelles au lancement
+    suivant, et l'étude repart en 1 m ;
+  - les dalles déjà en cache restent utilisées normalement.]]></changelog>
+        <create_date>2026-09-30T21:04:50.092595+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.18.5/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.18.6/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -28,8 +69,8 @@
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-08-23T19:09:19.028195+00:00</update_date>
+        <update_date>2026-09-30T21:04:50.092595+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.18.5</version>
+        <version>1.18.6</version>
     </pyqgis_plugin>
 </plugins>

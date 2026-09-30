@@ -3,6 +3,61 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.18.6] — 2026-09-30
+
+### Corrigé
+- **La préparation pouvait rester des dizaines de minutes sans le moindre
+  message, et le bouton « Annuler » y restait sans effet.** Plusieurs étapes
+  — la fusion des dalles par PDAL, la recherche des dalles PNOA en Espagne —
+  ne signalaient rien entre leur début et leur fin. Le journal s'arrêtait donc
+  net en pleine étape : impossible, en le lisant, de distinguer un traitement
+  qui avance d'un traitement bloqué. Deux journaux d'utilisateur reçus le
+  2026-09-30 étaient illisibles pour cette seule raison. Pire, « Annuler »
+  n'était pris en compte qu'à l'arrivée d'un message : pendant une étape
+  muette, le bouton ne faisait rien et QGIS paraissait figé. La préparation
+  émet désormais, toutes les 30 secondes, une ligne nommant l'étape en cours
+  et le temps écoulé — ce qui rend aussi « Annuler » opérant.
+
+### Ajouté
+- La génération du MNT annonce le nombre de dalles et le volume à traiter,
+  et prévient que l'étape ne rend pas de progression.
+- **Avertissement quand le dossier de sortie est synchronisé dans le nuage**
+  (OneDrive, Dropbox, Google Drive, iCloud, Nextcloud…). Le dossier de travail
+  y reçoit plusieurs gigaoctets de dalles LiDAR : le client de synchronisation
+  les téléverse pendant que le calcul les lit, et l'option « fichiers à la
+  demande » peut les vider puis les retélécharger à chaque lecture — la
+  préparation paraît alors figée. Un dossier local est recommandé.
+- **Dalles PNOA à récupérer à la main, quand le téléchargement automatique
+  échoue.** KarstPro écrit la liste exacte des dalles manquantes dans
+  `lidar_work/laz/dalles_a_telecharger.txt` — lien du CNIG, dossier où les
+  déposer, noms à conserver — et le signale dans le journal. Les dalles
+  déposées à la main sont reprises telles quelles au lancement suivant. Cela
+  évite le repli 5 m, qui n'est pas une simple perte de précision : mesuré sur
+  deux études espagnoles réelles, il efface de 48 % à 93 % des dolines selon la
+  zone, et **la totalité** des gouffres (ils se lisent dans les trous de
+  NODATA du semis LiDAR, qu'un relief interpolé n'a pas).
+
+### Connu
+- **Le téléchargement automatique des dalles PNOA 1 m n'est plus possible.**
+  Le CNIG a placé son bouton de téléchargement derrière une vérification
+  anti-robot (reCAPTCHA v3) le **2026-09-29 à 12 h** : la page demande un
+  jeton puis appelle `preAutorizarDescarga`, et sans ce jeton le serveur
+  répond « Error en el protocolo de descarga. No está autorizado ».
+  **KarstPro ne contourne pas ce contrôle** — c'est une mesure
+  d'anti-automatisation du fournisseur, et la respecter n'est pas négociable.
+  Ce n'est donc pas un défaut à corriger mais une contrainte durable.
+
+  Conséquences et contournements, tous en place :
+  - la préparation reconnaît ce refus, cesse d'essayer dès la première dalle
+    (au lieu de rejouer l'échec 35 fois) et en nomme la cause dans le journal ;
+  - la liste `dalles_a_telecharger.txt` décrit la voie **officielle groupée** —
+    panier du CNIG, « Descarga automática », fichier `.jnlp` ouvert avec Open
+    Web Start, en indiquant `lidar_work/laz/` comme dossier de destination —
+    et donne en repli un lien de fiche par dalle ;
+  - les dalles ainsi récupérées sont reprises telles quelles au lancement
+    suivant, et l'étude repart en 1 m ;
+  - les dalles déjà en cache restent utilisées normalement.
+
 ## [1.18.5] — 2026-08-23
 
 ### Corrigé
