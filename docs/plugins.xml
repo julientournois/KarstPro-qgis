@@ -1,64 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.18.6">
+    <pyqgis_plugin name="KarstPro" version="1.18.7">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
-        <changelog><![CDATA[Corrigé :
-- La préparation pouvait rester des dizaines de minutes sans le moindre
-  message, et le bouton « Annuler » y restait sans effet. Plusieurs étapes
-  — la fusion des dalles par PDAL, la recherche des dalles PNOA en Espagne —
-  ne signalaient rien entre leur début et leur fin. Le journal s'arrêtait donc
-  net en pleine étape : impossible, en le lisant, de distinguer un traitement
-  qui avance d'un traitement bloqué. Deux journaux d'utilisateur reçus le
-  2026-09-30 étaient illisibles pour cette seule raison. Pire, « Annuler »
-  n'était pris en compte qu'à l'arrivée d'un message : pendant une étape
-  muette, le bouton ne faisait rien et QGIS paraissait figé. La préparation
-  émet désormais, toutes les 30 secondes, une ligne nommant l'étape en cours
-  et le temps écoulé — ce qui rend aussi « Annuler » opérant.
+        <changelog><![CDATA[Ajouté :
+- KarstPro ouvre pour vous le fichier de téléchargement du CNIG. En
+  Espagne, la marche à suivre est désormais : constituer un panier sur le
+  portail du CNIG, cliquer « Descarga automática », puis déposer le fichier
+  `.jnlp` obtenu dans le dossier de l'étude. À la préparation suivante,
+  KarstPro le détecte, l'ouvre avec l'application du CNIG et rappelle dans le
+  journal le dossier de destination à indiquer. Les dalles téléchargées sont
+  reprises au lancement d'après, et l'étude se fait en 1 m. Le fichier est
+  accepté dans le dossier des dalles ou à la racine de l'étude.
+- Documentation refondue partout pour cette marche à suivre : panneau d'aide
+  de *Préparer une étude* (FR et EN), manuel utilisateur, documentation
+  technique, et une entrée dédiée dans le guide de dépannage — avec les deux
+  pièges qui bloquent le plus souvent (la limite de 20 dalles du panier sans
+  compte, et Open Web Start qui remplace Java 8).
 
-Ajouté :
-- La génération du MNT annonce le nombre de dalles et le volume à traiter,
-  et prévient que l'étape ne rend pas de progression.
-- Avertissement quand le dossier de sortie est synchronisé dans le nuage
-  (OneDrive, Dropbox, Google Drive, iCloud, Nextcloud…). Le dossier de travail
-  y reçoit plusieurs gigaoctets de dalles LiDAR : le client de synchronisation
-  les téléverse pendant que le calcul les lit, et l'option « fichiers à la
-  demande » peut les vider puis les retélécharger à chaque lecture — la
-  préparation paraît alors figée. Un dossier local est recommandé.
-- Dalles PNOA à récupérer à la main, quand le téléchargement automatique
-  échoue. KarstPro écrit la liste exacte des dalles manquantes dans
-  `lidar_work/laz/dalles_a_telecharger.txt` — lien du CNIG, dossier où les
-  déposer, noms à conserver — et le signale dans le journal. Les dalles
-  déposées à la main sont reprises telles quelles au lancement suivant. Cela
-  évite le repli 5 m, qui n'est pas une simple perte de précision : mesuré sur
-  deux études espagnoles réelles, il efface de 48 % à 93 % des dolines selon la
-  zone, et la totalité des gouffres (ils se lisent dans les trous de
-  NODATA du semis LiDAR, qu'un relief interpolé n'a pas).
+Corrigé :
+- Les dalles LiDAR déposées à la main étaient purement ignorées. Quatre
+  raccourcis emboîtés, chacun raisonnable seul, rendaient la marche à suivre
+  impossible : la préparation sautait la recherche du MNT dès que `mnt.tif`
+  existait (celui du relief 5 m), l'adaptateur du territoire ne régénérait le
+  MNT que s'il était absent, `generate_mnt` rendait la main sans rien faire si
+  le fichier existait, et les caches dérivés — remplissage, dolines, gouffres —
+  restaient ceux calculés sur le 5 m. Résultat mesuré : les dalles étaient
+  reconnues, la reconstruction annoncée, et l'étude rendait zéro gouffre.
+  Désormais une dalle plus récente que le MNT le périme, le MNT est reconstruit
+  pour de bon, et ses dérivés sont invalidés. Sur une même emprise de 2 × 2 km :
+  0 gouffre et 5 cibles en 5 m, contre 1 862 gouffres et 145 cibles en 1 m.
+  Le même défaut existait en France, où un MNT bâti sur un lot de dalles
+  incomplet ne se refaisait pas quand les manquantes arrivaient — alors que
+  c'est la procédure documentée pour contourner le bridage du CDN de l'IGN.
+- KarstPro annonçait « Fichier ouvert » alors que rien ne l'était. Sous
+  Windows, l'ouverture d'un `.jnlp` sans application associée n'échoue pas :
+  elle rend la main sans rien faire. L'association est désormais vérifiée
+  avant, et à défaut le message explique qu'il faut installer Open Web Start.
 
-Connu :
-- Le téléchargement automatique des dalles PNOA 1 m n'est plus possible.
-  Le CNIG a placé son bouton de téléchargement derrière une vérification
-  anti-robot (reCAPTCHA v3) le 2026-09-29 à 12 h : la page demande un
-  jeton puis appelle `preAutorizarDescarga`, et sans ce jeton le serveur
-  répond « Error en el protocolo de descarga. No está autorizado ».
-  KarstPro ne contourne pas ce contrôle — c'est une mesure
-  d'anti-automatisation du fournisseur, et la respecter n'est pas négociable.
-  Ce n'est donc pas un défaut à corriger mais une contrainte durable.
-
-  Conséquences et contournements, tous en place :
-  - la préparation reconnaît ce refus, cesse d'essayer dès la première dalle
-    (au lieu de rejouer l'échec 35 fois) et en nomme la cause dans le journal ;
-  - la liste `dalles_a_telecharger.txt` décrit la voie officielle groupée —
-    panier du CNIG, « Descarga automática », fichier `.jnlp` ouvert avec Open
-    Web Start, en indiquant `lidar_work/laz/` comme dossier de destination —
-    et donne en repli un lien de fiche par dalle ;
-  - les dalles ainsi récupérées sont reprises telles quelles au lancement
-    suivant, et l'étude repart en 1 m ;
-  - les dalles déjà en cache restent utilisées normalement.]]></changelog>
-        <create_date>2026-09-30T21:04:50.092595+00:00</create_date>
+Modifié :
+- Quand un `.jnlp` est présent, la liste `dalles_a_telecharger.txt` n'est plus
+  réécrite : l'utilisateur a déjà sélectionné ses dalles, lui en redonner la
+  liste n'apporte rien.
+- Documentation : Open Web Start est annoncé comme prérequis du
+  téléchargement en lot — manuel utilisateur, panneaux d'aide FR et EN, et
+  guide de dépannage.]]></changelog>
+        <create_date>2026-10-02T19:02:07.519307+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.18.6/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.18.7/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -69,8 +59,8 @@ Connu :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-09-30T21:04:50.092595+00:00</update_date>
+        <update_date>2026-10-02T19:02:07.519307+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.18.6</version>
+        <version>1.18.7</version>
     </pyqgis_plugin>
 </plugins>

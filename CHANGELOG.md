@@ -3,6 +3,51 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.18.7] — 2026-10-02
+
+### Ajouté
+- **KarstPro ouvre pour vous le fichier de téléchargement du CNIG.** En
+  Espagne, la marche à suivre est désormais : constituer un panier sur le
+  portail du CNIG, cliquer « Descarga automática », puis **déposer le fichier
+  `.jnlp` obtenu dans le dossier de l'étude**. À la préparation suivante,
+  KarstPro le détecte, l'ouvre avec l'application du CNIG et rappelle dans le
+  journal le dossier de destination à indiquer. Les dalles téléchargées sont
+  reprises au lancement d'après, et l'étude se fait en 1 m. Le fichier est
+  accepté dans le dossier des dalles **ou** à la racine de l'étude.
+- Documentation refondue partout pour cette marche à suivre : panneau d'aide
+  de *Préparer une étude* (FR et EN), manuel utilisateur, documentation
+  technique, et une entrée dédiée dans le guide de dépannage — avec les deux
+  pièges qui bloquent le plus souvent (la limite de 20 dalles du panier sans
+  compte, et Open Web Start qui remplace Java 8).
+
+### Corrigé
+- **Les dalles LiDAR déposées à la main étaient purement ignorées.** Quatre
+  raccourcis emboîtés, chacun raisonnable seul, rendaient la marche à suivre
+  impossible : la préparation sautait la recherche du MNT dès que `mnt.tif`
+  existait (celui du relief 5 m), l'adaptateur du territoire ne régénérait le
+  MNT que s'il était absent, `generate_mnt` rendait la main sans rien faire si
+  le fichier existait, et les caches dérivés — remplissage, dolines, gouffres —
+  restaient ceux calculés sur le 5 m. Résultat mesuré : les dalles étaient
+  reconnues, la reconstruction annoncée, et l'étude rendait **zéro gouffre**.
+  Désormais une dalle plus récente que le MNT le périme, le MNT est reconstruit
+  pour de bon, et ses dérivés sont invalidés. Sur une même emprise de 2 × 2 km :
+  **0 gouffre et 5 cibles en 5 m, contre 1 862 gouffres et 145 cibles en 1 m**.
+  Le même défaut existait en France, où un MNT bâti sur un lot de dalles
+  incomplet ne se refaisait pas quand les manquantes arrivaient — alors que
+  c'est la procédure documentée pour contourner le bridage du CDN de l'IGN.
+- **KarstPro annonçait « Fichier ouvert » alors que rien ne l'était.** Sous
+  Windows, l'ouverture d'un `.jnlp` sans application associée n'échoue pas :
+  elle rend la main sans rien faire. L'association est désormais vérifiée
+  avant, et à défaut le message explique qu'il faut installer Open Web Start.
+
+### Modifié
+- Quand un `.jnlp` est présent, la liste `dalles_a_telecharger.txt` n'est plus
+  réécrite : l'utilisateur a déjà sélectionné ses dalles, lui en redonner la
+  liste n'apporte rien.
+- Documentation : **Open Web Start est annoncé comme prérequis** du
+  téléchargement en lot — manuel utilisateur, panneaux d'aide FR et EN, et
+  guide de dépannage.
+
 ## [1.18.6] — 2026-09-30
 
 ### Corrigé

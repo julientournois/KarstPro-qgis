@@ -1,6 +1,6 @@
 # KarstPro — Document technique : critères, seuils, outils, modèles
 
-**Version : 1.18.6**
+**Version : 1.18.7**
 
 > Annexe optionnelle au guide d'utilisation (`KarstPro_Documentation.pdf`,
 > fourni à côté de ce fichier) : le détail complet de
@@ -586,7 +586,7 @@ déclare chacune des treize capacités sous l'une de trois formes :
 | Capacité | France | Espagne | Forme (FR / ES) |
 |---|---|---|---|
 | `crs_travail` | EPSG:2154 (Lambert-93) | UTM 29/30/31 selon la longitude du centroïde de la bbox | config / config |
-| `mnt` | LiDAR HD IGN (WFS + téléchargement COPC + PDAL) | LiDAR PNOA 1 m automatique → repli MDT WCS 5 m | adaptateur / chaîne |
+| `mnt` | LiDAR HD IGN (WFS + téléchargement COPC + PDAL) | dalles PNOA 1 m déposées par l'utilisateur (panier CNIG → `.jnlp`) → repli MDT WCS 5 m | adaptateur / chaîne |
 | `geologie` | BD Charm-50 (cache local) + repli WFS BRGM | IGME ArcGIS REST (1:50 000 → repli 1:1M) | adaptateur / config |
 | `contexte_karstique` | BDLISA (vérification zone karstique) | **absente** | config / absente |
 | `cavites_connues` | Géorisques | **absente** | config / absente |
@@ -718,9 +718,19 @@ Charm-50, pas une vérité géologique établie. ⚠️ Le segment `/rest/` est
 obligatoire dans l'URL : une URL sans ce segment renvoie une page d'erreur
 générique ArcGIS, pas du JSON.
 
-**MNT Espagne — trois chemins, `MNT_FILES` (LAZ PNOA manuel, 1 m)
-prioritaire, PNOA automatique (1 m) ensuite via l'adaptateur `mnt_pnoa`,
-MDT WCS 5 m en dernier repli** (`Chaine` de `espagne.json`, §6.2 du design).
+**MNT Espagne — `MNT_FILES` prioritaire, puis les dalles PNOA 1 m
+présentes dans `lidar_work/laz/`, MDT WCS 5 m en dernier repli** (`Chaine`
+de `espagne.json`, §6.2 du design). Le téléchargement automatique des
+dalles **ne fonctionne plus depuis le 2026-09-29** : le CNIG a placé son
+bouton derrière un reCAPTCHA v3 (`preAutorizarDescarga`), et son panier de
+téléchargement derrière un second (`prepararDescargaAuto`, clé distincte).
+KarstPro ne contourne ni l'un ni l'autre. `mnt_pnoa` continue de LISTER les
+dalles de l'emprise — ce qui reste libre d'accès — puis écrit
+`dalles_a_telecharger.txt` (un lien de fiche par dalle) ou, si l'utilisateur
+a déposé le `.jnlp` de son panier, l'ouvre avec le gestionnaire du système
+(`trouver_jnlp` / `lancer_jnlp`). Les dalles ainsi récupérées sont reconnues
+par `_find_cached_tile`, qui compare la cellule de grille lue dans le nom de
+fichier.
 Le repli WCS (`https://servicios.idee.es/wcs-inspire/mdt`, WCS 2.0.1
 INSPIRE) sert un GeoTIFF sol nu directement, sans LAZ ni PDAL, sur un
 unique coverage `Elevacion25830_5` qui couvre à lui seul les trois fuseaux
@@ -751,8 +761,17 @@ erreur explicite listant les zones couvertes.
 > - **Pas de signal RGE ALTI hors France** — produit IGN français sans équivalent branché.
 > - **LiDAR PNOA : une seule campagne (2022-2025, `codSerie=LIDA3`)** — pas de
 >   comparaison multi-campagnes façon RGE ALTI pour l'instant.
-> - **Automatisation PNOA reposant sur un endpoint non documenté** — le
->   repli WCS existe précisément pour absorber une panne de ce mécanisme.
+> - **Téléchargement PNOA non automatisable** (depuis le 2026-09-29) — deux
+>   reCAPTCHA distincts, un sur le téléchargement unitaire et un sur le
+>   panier. Une étape humaine par zone d'étude est donc incontournable. Le
+>   CNIG a autorisé par écrit l'automatisation de la phase de téléchargement
+>   via `generarFichero.do`, mais l'appel qui donne les chemins à partir de
+>   l'identifiant de panier n'est pas documenté : non implémenté.
+> - **Repli WCS 5 m très coûteux en détection** — mesuré sur les dolines
+>   réellement détectées en 1 m : Cangas de Onis −65 %, Isaba −93 %,
+>   Marnaval −86 % (seuil de 9 cellules de 5 m). Et les gouffres passent de
+>   26 643 à **0** : ils se lisent dans les trous de NODATA du semis, qu'un
+>   relief interpolé n'a pas.
 > - **Table de karstifiabilité IGME approximative**, cf. ci-dessus.
 
 **Fond de carte satellite.** L'ortho PNOA (WMS INSPIRE
