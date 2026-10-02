@@ -3,6 +3,18 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.18.8] — 2026-10-02
+
+### Ajouté
+- **Le guide de dépannage est enfin livré dans le paquet** (`DEPANNAGE.md`).
+  Constaté en vérifiant la 1.18.7 : il n'était inclus dans **aucun** des deux
+  zips, alors qu'il porte les marches à suivre que l'on cherche quand quelque
+  chose coince — téléchargement LiDAR lent ou bloqué, récupération des dalles
+  PNOA en Espagne depuis le portail du CNIG, confirmation de sécurité d'Open
+  Web Start, couches absentes, export MLL. Il n'existait que dans le dépôt.
+  Le fichier d'accueil du paquet y renvoie désormais, et un test de packaging
+  vérifie qu'il est présent et identique à sa source.
+
 ## [1.18.7] — 2026-10-02
 
 ### Ajouté

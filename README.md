@@ -26,6 +26,9 @@ QField prêt pour le terrain et un rapport structuré.
 > Guide pas à pas du bureau au terrain, référence des paramètres, scoring, export.
 > Pour la rigueur scientifique complète du scoring (validation, AUC, seuils) :
 > voir `DOC_TECHNIQUE_DETECTION.md`, fourni dans cette même archive.
+> **Quand quelque chose coince**, commencer par `DEPANNAGE.md` (même archive) :
+> symptômes courants et marche à suivre — téléchargement LiDAR bloqué ou lent,
+> récupération des dalles PNOA en Espagne, couches absentes, export MLL.
 
 ---
 
