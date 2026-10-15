@@ -10,7 +10,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/QGIS-%E2%89%A5%203.34-589632?logo=qgis&logoColor=white" alt="QGIS ≥ 3.34">
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
-  <img src="https://img.shields.io/badge/Plateformes-Windows%20%7C%20Linux-555" alt="Windows | Linux">
+  <img src="https://img.shields.io/badge/Plateformes-Windows%20%7C%20Linux%20%7C%20macOS-555" alt="Windows | Linux | macOS">
   <img src="https://img.shields.io/badge/Licence-PolyForm%20Noncommercial%201.0-BB6A2E" alt="Licence PolyForm Noncommercial 1.0">
 </p>
 
@@ -108,6 +108,30 @@ Exécuter quand même*.
    Le script installe le plugin **et** ses dépendances Python en une fois.
 3. **Redémarrer QGIS**, puis **Extensions → Gérer et installer des extensions →
    Installées** et cocher **KarstPro**.
+
+### macOS
+
+Aucun installeur dédié — tout se fait depuis QGIS, en trois étapes :
+
+1. **QGIS** depuis [qgis.org/download](https://qgis.org/download/) (glisser
+   `QGIS.app` dans *Applications*). PDAL et GDAL sont livrés dedans.
+2. **Le plugin** : *Extensions → Gérer et installer des extensions →
+   Paramètres → Dépôts → Ajouter* et coller
+   `https://julientournois.github.io/KarstPro-qgis/plugins.xml`, puis
+   installer **KarstPro** depuis *Extensions → Toutes*.
+   (`./add_qgis_repo.sh` fait la même inscription depuis un terminal.)
+3. **Les dépendances** : *Extensions → Console Python*, puis
+   `import karstpro.install_dependencies`
+
+> ⚠️ **L'erreur la plus fréquente** — installer les dépendances avec le Python
+> du système (Homebrew, `/usr/bin/python3`). `pip` répond « succès » et QGIS ne
+> les voit jamais, car il lit son propre `site-packages`. La console Python de
+> QGIS évite le problème : elle vise forcément le bon interpréteur.
+>
+> Le dossier des plugins, si besoin de le trouver à la main, est
+> `~/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/`
+> (`QGIS4` selon la version) — **pas** `~/.local/share/QGIS/…`, qui est le
+> chemin Linux.
 
 ### Dépôt QGIS custom (mises à jour automatiques, sans rien télécharger)
 

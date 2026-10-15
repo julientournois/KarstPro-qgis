@@ -36,6 +36,57 @@ est présente mais vide alors qu'Infoterre affiche des cavités sur la zone.
 
 ---
 
+## macOS — installation et dépendances
+
+**Le plugin et ses dépendances s'installent comme ailleurs, mais trois
+chemins diffèrent.** Procédure complète :
+
+**1. QGIS.** Installer la version officielle depuis
+<https://qgis.org/download/> (l'application `QGIS.app`). Prendre la version
+la plus récente proposée.
+
+**2. Le plugin.** Deux voies, la première étant préférable car elle apporte
+les mises à jour automatiques :
+
+- *Dépôt KarstPro* : lancer `add_qgis_repo.sh` (fourni dans l'archive), ou
+  ajouter à la main dans QGIS → *Extensions* → *Installer/Gérer* →
+  *Paramètres* → *Dépôts* → *Ajouter* l'URL
+  `https://julientournois.github.io/KarstPro-qgis/plugins.xml`.
+  KarstPro apparaît ensuite dans la liste des extensions.
+- *Installation manuelle* : décompresser `karstpro.zip` dans
+  `~/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/`
+  (remplacer `QGIS3` par `QGIS4` selon la version installée). ⚠️ Ce n'est
+  **pas** `~/.local/share/QGIS/…`, qui est le chemin Linux.
+
+**3. Les dépendances Python** — `geopandas`, `rasterio`, `reportlab`,
+`whitebox`, `pyproj`. La méthode fiable sur les trois systèmes est la console
+Python de QGIS, parce qu'elle vise forcément le bon interpréteur :
+
+1. ouvrir QGIS ;
+2. *Extensions* → *Console Python* ;
+3. coller et exécuter : `import karstpro.install_dependencies`
+
+Le script utilise `sys.executable`, c'est-à-dire le Python de QGIS lui-même —
+inutile de deviner où il se trouve. Le script `install_deps.sh` fait la même
+chose depuis un terminal, mais la console est plus sûre.
+
+⚠️ **Ne pas installer les dépendances avec le Python du système** (celui de
+Homebrew ou `/usr/bin/python3`) : QGIS ne le lit pas, et les paquets resteront
+invisibles. C'est l'erreur la plus fréquente.
+
+**4. Rien d'autre à installer.** PDAL et GDAL sont livrés dans `QGIS.app` ;
+KarstPro les y trouve tout seul. WhiteboxTools est téléchargé par le paquet
+`whitebox` lui-même, à sa première utilisation.
+
+**Espagne** : si l'utilisateur doit récupérer des dalles PNOA par le panier du
+CNIG, il lui faudra aussi **Open Web Start** (<https://openwebstart.com/download/>)
+pour ouvrir le fichier `.jnlp` — voir la section suivante.
+
+**Si « pdal introuvable » apparaît** : cela signifiait, jusqu'à la version
+1.18.9, que KarstPro ne cherchait que `pdal.exe` et manquait donc le binaire
+livré par `QGIS.app`, qui s'appelle `pdal` sans extension. Mettre KarstPro à
+jour suffit.
+
 ## Espagne — « PNOA 1 m indisponible », étude en 5 m
 
 **Symptôme :** le journal annonce que les dalles PNOA n'ont pas pu être

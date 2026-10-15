@@ -3,7 +3,40 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
-## [1.18.8] — 2026-10-02
+## [1.18.9] — 2026-10-15
+
+### Corrigé
+- **macOS : aucun MNT ne pouvait être calculé depuis des dalles LiDAR.**
+  KarstPro ne cherchait que `pdal.exe` dans le dossier `bin/` de QGIS. Or le
+  binaire livré par `QGIS.app` s'appelle `pdal`, sans extension : la recherche
+  échouait toujours, et le repli par le `PATH` ne sauvait rien puisque le
+  `bin/` d'une application macOS n'y figure pas. Les deux noms sont désormais
+  essayés. Sous Linux le défaut passait inaperçu, le paquet système plaçant
+  `pdal` dans `/usr/bin`.
+- `install_deps.sh` annonçait le dossier de plugins **Linux** sur un Mac,
+  envoyant l'utilisateur dans un dossier inexistant — c'est
+  `~/Library/Application Support/QGIS/…`. Le script sait aussi détecter le
+  Python embarqué dans `QGIS.app`, que les branches conda, apt et flatpak ne
+  voyaient jamais.
+
+### Ajouté
+- Guide de dépannage : section **« macOS — installation et dépendances »**,
+  avec la procédure complète et l'erreur la plus fréquente (installer les
+  dépendances avec le Python du système, que QGIS ne lit pas).
+
+### Corrigé
+- **Une panne passagère du service d'occupation du sol se figeait pour de
+  bon.** Le filtrage des faux gouffres (bâti, plans d'eau, végétation dense)
+  dépend d'un service distant. Quand celui-ci tombait, la couche de gouffres
+  était écrite **brute** — et comme le fichier existait désormais, toute
+  préparation suivante sautait l'étape entière : le filtrage ne se retentait
+  jamais. Constaté le 2026-10-02, SIOSE en panne : 2 210 candidats livrés sans
+  aucun filtre, là où les deux filtres en écartent couramment plus de 90 %.
+  KarstPro note désormais que le filtrage n'a pas pu être appliqué et le
+  retente à la préparation suivante, **sans refaire la détection** qui, elle,
+  prend des minutes et n'était pas en cause. Une capacité simplement absente
+  du territoire reste distinguée d'une panne : c'est définitif, ça ne se
+  retente pas.
 
 ### Ajouté
 - **Le guide de dépannage est enfin livré dans le paquet** (`DEPANNAGE.md`).
