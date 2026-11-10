@@ -1,54 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugins>
-    <pyqgis_plugin name="KarstPro" version="1.18.9">
+    <pyqgis_plugin name="KarstPro" version="1.18.10">
         <about><![CDATA[Plugin QGIS pour la prospection spéléologique. Télécharge et analyse le LIDAR HD IGN pour détecter les phénomènes karstiques, calcule un score de priorité, prépare un projet QField pour la prospection terrain, et synchronise les données au retour.]]></about>
         <author_name><![CDATA[Julien Tournois]]></author_name>
         <changelog><![CDATA[Corrigé :
-- macOS : aucun MNT ne pouvait être calculé depuis des dalles LiDAR.
-  KarstPro ne cherchait que `pdal.exe` dans le dossier `bin/` de QGIS. Or le
-  binaire livré par `QGIS.app` s'appelle `pdal`, sans extension : la recherche
-  échouait toujours, et le repli par le `PATH` ne sauvait rien puisque le
-  `bin/` d'une application macOS n'y figure pas. Les deux noms sont désormais
-  essayés. Sous Linux le défaut passait inaperçu, le paquet système plaçant
-  `pdal` dans `/usr/bin`.
-- `install_deps.sh` annonçait le dossier de plugins Linux sur un Mac,
-  envoyant l'utilisateur dans un dossier inexistant — c'est
-  `~/Library/Application Support/QGIS/…`. Le script sait aussi détecter le
-  Python embarqué dans `QGIS.app`, que les branches conda, apt et flatpak ne
-  voyaient jamais.
-
-Ajouté :
-- Guide de dépannage : section « macOS — installation et dépendances »,
-  avec la procédure complète et l'erreur la plus fréquente (installer les
-  dépendances avec le Python du système, que QGIS ne lit pas).
-
-Corrigé :
-- Une panne passagère du service d'occupation du sol se figeait pour de
-  bon. Le filtrage des faux gouffres (bâti, plans d'eau, végétation dense)
-  dépend d'un service distant. Quand celui-ci tombait, la couche de gouffres
-  était écrite brute — et comme le fichier existait désormais, toute
-  préparation suivante sautait l'étape entière : le filtrage ne se retentait
-  jamais. Constaté le 2026-10-02, SIOSE en panne : 2 210 candidats livrés sans
-  aucun filtre, là où les deux filtres en écartent couramment plus de 90 %.
-  KarstPro note désormais que le filtrage n'a pas pu être appliqué et le
-  retente à la préparation suivante, sans refaire la détection qui, elle,
-  prend des minutes et n'était pas en cause. Une capacité simplement absente
-  du territoire reste distinguée d'une panne : c'est définitif, ça ne se
-  retente pas.
-
-Ajouté :
-- Le guide de dépannage est enfin livré dans le paquet (`DEPANNAGE.md`).
-  Constaté en vérifiant la 1.18.7 : il n'était inclus dans aucun des deux
-  zips, alors qu'il porte les marches à suivre que l'on cherche quand quelque
-  chose coince — téléchargement LiDAR lent ou bloqué, récupération des dalles
-  PNOA en Espagne depuis le portail du CNIG, confirmation de sécurité d'Open
-  Web Start, couches absentes, export MLL. Il n'existait que dans le dépôt.
-  Le fichier d'accueil du paquet y renvoie désormais, et un test de packaging
-  vérifie qu'il est présent et identique à sa source.]]></changelog>
-        <create_date>2026-10-15T18:49:02.524145+00:00</create_date>
+- URGENT — plus aucune étude française n'était possible. L'IGN a supprimé
+  le namespace `IGNF_NUAGES-DE-POINTS-LIDAR-HD` de son catalogue WFS : toute
+  recherche de dalles LiDAR HD échouait sur `HTTP 400 — Unknown namespace`,
+  dès l'étape 1-2 et quelle que soit la zone. Le service, lui, répond
+  normalement : la couche s'appelle désormais
+  `IGNF_LIDAR-HD_METADONNEE:metadata`. Vérifié sur deux emprises réelles du
+  Barrois : 16 dalles retrouvées de part et d'autre, URLs téléchargeables
+  (437 Mo, signature `LASF`), noms de fichiers inchangés — le cache existant
+  reste donc valide.
+- Le nouveau catalogue expose quatre champs d'URL. Seul `url_npl` porte le
+  nuage de points ; `url_mnt`, `url_mns` et `url_mnh` sont des requêtes WMS de
+  rasters. KarstPro lit une liste explicite, jamais « le premier champ qui
+  commence par url » — se tromper donnerait une image à PDAL, qui échouerait
+  trois étapes plus loin sans cause lisible.
+- Les erreurs du catalogue IGN étaient tronquées avant leur cause. Le
+  message rapportait les 300 premiers caractères de la réponse ; or une
+  `ExceptionReport` OGC commence par un `schemaLocation` de plus de deux cents
+  caractères, si bien que la coupure tombait pile avant le
+  `<ows:ExceptionText>`. Le journal de l'utilisateur s'arrêtait sur
+  « .../wfs/schemas » et il a fallu rejouer la requête à la main pour lire ce
+  que le serveur disait depuis le début. Le motif, le code et le `locator` sont
+  désormais extraits et affichés, avec le nom de couche interrogé.]]></changelog>
+        <create_date>2026-11-10T07:06:39.848571+00:00</create_date>
         <deprecated>False</deprecated>
         <description><![CDATA[Prospection karstique : analyse LIDAR HD IGN, scoring, QField]]></description>
-        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.18.9/karstpro.zip</download_url>
+        <download_url>https://github.com/julientournois/KarstPro-qgis/releases/download/v1.18.10/karstpro.zip</download_url>
         <experimental>False</experimental>
         <file_name>karstpro.zip</file_name>
         <homepage><![CDATA[https://karstpro.fr]]></homepage>
@@ -59,8 +40,8 @@ Ajouté :
         <server>False</server>
         <tags><![CDATA[spéléologie,karstologie,LIDAR,QField,prospection]]></tags>
         <tracker><![CDATA[https://github.com/julientournois/KarstPro-qgis/issues]]></tracker>
-        <update_date>2026-10-15T18:49:02.524145+00:00</update_date>
+        <update_date>2026-11-10T07:06:39.848571+00:00</update_date>
         <uploaded_by><![CDATA[Julien Tournois]]></uploaded_by>
-        <version>1.18.9</version>
+        <version>1.18.10</version>
     </pyqgis_plugin>
 </plugins>

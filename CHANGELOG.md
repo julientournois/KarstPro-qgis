@@ -3,6 +3,32 @@
 Évolutions notables du plugin. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/),
 versionnage sémantique. Les paquets distribués sont nommés `KarstPro_v<version>_<date>.zip`.
 
+## [1.18.10] — 2026-11-10
+
+### Corrigé
+- **URGENT — plus aucune étude française n'était possible.** L'IGN a supprimé
+  le namespace `IGNF_NUAGES-DE-POINTS-LIDAR-HD` de son catalogue WFS : toute
+  recherche de dalles LiDAR HD échouait sur `HTTP 400 — Unknown namespace`,
+  dès l'étape 1-2 et quelle que soit la zone. Le service, lui, répond
+  normalement : la couche s'appelle désormais
+  `IGNF_LIDAR-HD_METADONNEE:metadata`. Vérifié sur deux emprises réelles du
+  Barrois : 16 dalles retrouvées de part et d'autre, URLs téléchargeables
+  (437 Mo, signature `LASF`), noms de fichiers inchangés — le cache existant
+  reste donc valide.
+- Le nouveau catalogue expose **quatre** champs d'URL. Seul `url_npl` porte le
+  nuage de points ; `url_mnt`, `url_mns` et `url_mnh` sont des requêtes WMS de
+  rasters. KarstPro lit une liste explicite, jamais « le premier champ qui
+  commence par url » — se tromper donnerait une image à PDAL, qui échouerait
+  trois étapes plus loin sans cause lisible.
+- **Les erreurs du catalogue IGN étaient tronquées avant leur cause.** Le
+  message rapportait les 300 premiers caractères de la réponse ; or une
+  `ExceptionReport` OGC commence par un `schemaLocation` de plus de deux cents
+  caractères, si bien que la coupure tombait pile avant le
+  `<ows:ExceptionText>`. Le journal de l'utilisateur s'arrêtait sur
+  « .../wfs/schemas » et il a fallu rejouer la requête à la main pour lire ce
+  que le serveur disait depuis le début. Le motif, le code et le `locator` sont
+  désormais extraits et affichés, avec le nom de couche interrogé.
+
 ## [1.18.9] — 2026-10-15
 
 ### Corrigé
